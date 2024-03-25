@@ -1,0 +1,33 @@
+void ThreatsObject::CheckToMap(Map &map_data)
+{
+    // ... (code omitted for brevity)
+
+    if (x1 >= 0 && x2 < MAX_MAP_X && y1 >= 0 && y2 < MAX_MAP_Y)
+    {
+        if (x_val_ > 0) // main object is moving to right
+        {
+            int val1 = map_data.tile[y1][x2];
+            int val2 = map_data.tile[y2][x2];
+
+            if (val1 != BLANK_TILE && val1 != STATE_MONEY || val2 != BLANK_TILE && val2 != STATE_MONEY)
+            {
+                x_pos_ = x2 * TILE_SIZE;
+                x_pos_ -= width_frame_ + 1;
+                x_val_ = -x_val_; // Reverse direction when hitting an obstacle
+            }
+        }
+        else if (x_val_ < 0)
+        {
+            int val1 = map_data.tile[y1][x1];
+            int val2 = map_data.tile[y2][x1];
+
+            if (val1 != BLANK_TILE && val1 != STATE_MONEY || val2 != BLANK_TILE && val2 != STATE_MONEY)
+            {
+                x_pos_ = (x1 + 1) * TILE_SIZE;
+                x_val_ = -x_val_; // Reverse direction when hitting an obstacle
+            }
+        }
+    }
+
+    // ... (code omitted for brevity)
+}

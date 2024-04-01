@@ -10,8 +10,7 @@ MainObject::MainObject()
     y_val_ = 0;
     width_frame_ = 0;
     height_frame_ = 0;
-    status_ = WALK_NONE;
-    status_front = WALK_NONE;
+    status_ = WALK_RIGHT;
     input_type_.left_ = 0;
     input_type_.right_ = 0;
     input_type_.jump_ = 0;
@@ -24,6 +23,8 @@ MainObject::MainObject()
 
     come_back_time_ = 0;
     money_count = 0;
+    score_count = 0;
+    is_pause = false;
 }
 
 MainObject::~MainObject()
@@ -68,96 +69,52 @@ void MainObject::set_clip()
     }
 }
 
-void MainObject::HandelInputAction(SDL_Event events, SDL_Renderer *screen)
+void MainObject::HandelInputAction(SDL_Event events, SDL_Renderer *screen, Mix_Chunk* mChunk)
 {
     if (events.type == SDL_KEYDOWN)
     {
         switch (events.key.keysym.sym)
         {
-        case SDLK_d:
-        {
-            status_ = WALK_RIGHT;
-            input_type_.right_ = 1;
-            input_type_.left_ = 0;
-            // UpdateImagePlayer(screen);
-        }
-        break;
-        case SDLK_a:
-        {
-            status_ = WALK_LEFT;
-            input_type_.left_ = 1;
-            input_type_.right_ = 0;
-            // UpdateImagePlayer(screen);
-        }
-        break;
-        case SDLK_SPACE:
-        {
-            input_type_.jump_ = 1;
-        }
-        break;
-        case SDLK_r:
-        {
-            ShootR(screen);
-        } break;
+            case SDLK_SPACE:
+                {
+                    status_ = FLY; 
+                }
+                break;
+            case SDLK_r:
+                {
+                    ShootR(screen);
+                } break;
+            case SDLK_ESCAPE:
+                {
+                    is_pause = true;
+                } break;
         }
     }
     else if (events.type == SDL_KEYUP)
-    {
-        switch (events.key.keysym.sym)
         {
-        case SDLK_d:
-        {
-            input_type_.right_ = 0;
-            if (input_type_.left_ == 0) 
-            {    status_ = WALK_NONE;
-                status_front = WALK_RIGHT;}
+            switch (events.key.keysym.sym)
+            {
+            case SDLK_SPACE:
+            {
+                status_ = FALL;
+            }
+            break;
+            }
         }
-        break;
-        case SDLK_a:
-        {
-            input_type_.left_ = 0;
-            if (input_type_.right_ == 0)
-            {status_ = WALK_NONE;
-            status_front = WALK_LEFT;}
-        }
-        break;
-        case SDLK_SPACE:
-        {
-            input_type_.jump_ = 1;
-        }
-        break;
-        }
-    }
 
-    if (events.type == SDL_MOUSEBUTTONDOWN)
-    {
-        if (events.button.button == SDL_BUTTON_LEFT)
+     if (events.type == SDL_MOUSEBUTTONDOWN)
         {
-            input_type_.shot_ == 1;
-            ShootNormal(screen);
+            if (events.button.button == SDL_BUTTON_LEFT)
+            {
+                Mix_PlayChannel(MIX_CHANNEL,mChunk,0);
+                ShootNormal(screen);
+            }
         }
-    } else if (events.type == SDL_MOUSEBUTTONUP) 
-    {
-        if (events.button.button == SDL_BUTTON_LEFT)
-        {
-            input_type_.shot_ == 0;
-        }
-    }
 }
 void MainObject::Show(SDL_Renderer *des, int num_frame)
 {
     UpdateImagePlayer(des);
-    if (input_type_.left_ == 1 || input_type_.right_ == 1 || input_type_.shot_ == 1)
-    {
-        // if (frame_delay > 1) 
-        frame_++;
-        // else frame_delay++;
-    }
-    else
-    {
-        frame_ = 0;
-    }
-
+    frame_++;
     if (frame_ >= num_frame)
     {
         frame_ = 0;
@@ -224,40 +181,46 @@ void MainObject::RemoveBullet(const int &idx)
     }
 }
 
-void MainObject::DoPlayer(Map &map_data)
+
+void MainObject::DoPlayerX(Map &map_data)
 {
     if (come_back_time_ == 0)
     {
-        x_val_ = 0;
+        x_val_ += STEP_SPEED;
         y_val_ += GRAVITY_SPEED;
 
         if (y_val_ >= MAX_FALL_SPEED)
         {
             y_val_ = MAX_FALL_SPEED;
         }
-
-        if (input_type_.left_ == 1)
+        if (x_val_ >= MAX_SPEED) 
         {
-            x_val_ -= PLAYER_SPEED;
+            x_val_ = MAX_SPEED;
         }
-        else if (input_type_.right_ == 1)
+        if (status_ == FLY)
         {
-            x_val_ += PLAYER_SPEED;
-        }
-
-        if (input_type_.jump_ == 1)
-        {
-            if (on_ground_ == true)
-            {
+            // if (on_ground_ == true)
+            // {
                 y_val_ = -PLAYER_JUMP_VAL;
-            }
+            // }
             on_ground_ = false;
-            input_type_.jump_ = 0;
         }
+        IncreaseScore();
         CheckToMap(map_data);
         CenterEntityOnMap(map_data);
     }
-
+    // if(come_back_time_ == 0)
+    // {
+    //     if (status_ == FLY)
+    //     {
+    //         y_pos_ -= PLAYER_JUMP_VAL;
+    //     }
+    //     if (y_pos_ <= 0) status_ == FALL;
+    //     if (status_ == FALL && y_pos_ < GROUND)
+    //     {
+    //         y_pos_ += GRAVITY_SPEED;
+    //     } 
+    // }
     if (come_back_time_ > 0)
     {
         come_back_time_--;
@@ -266,7 +229,6 @@ void MainObject::DoPlayer(Map &map_data)
             on_ground_ = false;
             if (x_pos_ >= 256)
             {
-                x_pos_ -= 256; // 4tile map
             }
             else
             {
@@ -281,7 +243,7 @@ void MainObject::DoPlayer(Map &map_data)
 
 void MainObject::CenterEntityOnMap(Map &map_data)
 {
-    map_data.start_x_ = x_pos_ - (SCREEN_WIDTH / 2);
+    map_data.start_x_ = x_pos_ - (SCREEN_WIDTH - 900);
     if (map_data.start_x_ < 0)
     {
         map_data.start_x_ = 0;
@@ -406,7 +368,7 @@ void MainObject::CheckToMap(Map &map_data)
                     y_val_ = 0;
 
                     on_ground_ = true;
-                    if (status_ == WALK_NONE)
+                    if (status_ == FALL || status_ == FLY)
                     {
                         status_ == WALK_RIGHT;
                     }
@@ -452,28 +414,217 @@ void MainObject::CheckToMap(Map &map_data)
         come_back_time_ = 60;
     }
 }
+// void MainObject::CheckToMap(Map &map_data)
+// {
+//     int x1 = 0;
+//     int x2 = 0;
 
+//     int y1 = 0;
+//     int y2 = 0;
+
+//     // Check horizontal
+//     int height_min = height_frame_ < TILE_SIZE ? height_frame_ : TILE_SIZE;
+
+//     x1 = (x_pos_ + x_val_) / TILE_SIZE;
+//     x2 = (x_pos_ + x_val_ + width_frame_ - 1) / TILE_SIZE;
+
+//     y1 = (y_pos_) / TILE_SIZE;
+//     y2 = (y_pos_ + height_min - 1) / TILE_SIZE;
+
+//     /*
+//         x1,y1********x2,y1
+//         *            *
+//         *            *
+//         *            *
+//         x1,y2********x2,y2
+//     */
+
+//     if (x1 >= 0 && x2 < MAX_MAP_X && y1 >= 0 && y2 < MAX_MAP_Y)
+//     {
+//         if (x_val_ > 0) // main object is moving to right
+//         {
+
+//             int val1 = map_data.tile[y1][x2];
+//             int val2 = map_data.tile[y2][x2];
+
+//             if (val1 == STATE_MONEY)
+//             {
+//                 map_data.tile[y1][x2] = 0;
+//                 IncreaseMoney();
+//             } 
+//             else if (val1 != BLANK_TILE)
+//                 {
+//                     x_pos_ = x2 * TILE_SIZE;
+//                     x_pos_ -= width_frame_ + 1;
+//                     x_val_ = 0;
+//                 }
+//             if (val2 == STATE_MONEY)
+//             {
+//                 map_data.tile[y2][x2] = 0;
+//                 IncreaseMoney();
+//             }
+//             else if (val2 != BLANK_TILE)
+//                 {
+//                     x_pos_ = x2 * TILE_SIZE;
+//                     x_pos_ -= width_frame_ + 1;
+//                     x_val_ = 0;
+//                 }
+//         }
+//         else if (x_val_ < 0)
+//         {
+//             int val1 = map_data.tile[y1][x1];
+//             int val2 = map_data.tile[y2][x1];
+
+//             // if (val1 == STATE_MONEY || val2 == STATE_MONEY)
+//             // {
+//             //     map_data.tile[y1][x1] = 0;
+//             //     map_data.tile[y2][x1] = 0;
+//             //     IncreaseMoney();
+//             // }
+//             // else
+//             // {
+//             //     if (val1 != BLANK_TILE || val2 != BLANK_TILE)
+//             //     {
+//             //         x_pos_ = (x1 + 1) * TILE_SIZE;
+//             //         x_val_ = 0;
+//             //     }
+//             // }
+//             if (val1 == STATE_MONEY)
+//             {
+//                 map_data.tile[y1][x1] = 0;
+//                 IncreaseMoney();
+//             } 
+//             else if (val1 != BLANK_TILE)
+//                 {
+//                     x_pos_ = (x1 + 1) * TILE_SIZE;
+//                     x_val_ = 0;
+//                 }
+//             if (val2 == STATE_MONEY)
+//             {
+//                 map_data.tile[y2][x1] = 0;
+//                 IncreaseMoney();
+//             }
+//             else if (val2 != BLANK_TILE)
+//                 {
+//                     x_pos_ = (x1 + 1) * TILE_SIZE;
+//                     x_val_ = 0;
+//                 }
+//         }
+//     }
+
+//     // Check vertical
+
+//     int width_min = width_frame_ < TILE_SIZE ? width_frame_ : TILE_SIZE;
+//     x1 = (x_pos_) / TILE_SIZE;
+//     x2 = (x_pos_ + width_min) / TILE_SIZE;
+
+//     y1 = (y_pos_ + y_val_) / TILE_SIZE;
+//     y2 = (y_pos_ + y_val_ + height_frame_ - 1) / TILE_SIZE;
+
+//     if (x1 >= 0 && x2 < MAX_MAP_X && y1 >= 0 && y2 < MAX_MAP_Y)
+//     {
+//         if (y_val_ > 0)
+//         {
+
+//             int val1 = map_data.tile[y2][x1];
+//             int val2 = map_data.tile[y2][x2];
+
+//             if (val1 == STATE_MONEY)
+//             {
+//                 map_data.tile[y2][x2] = 0;
+//                 IncreaseMoney();
+//             }
+//             else if (val1 != BLANK_TILE)
+//             {
+//                 y_pos_ = y2 * TILE_SIZE;
+//                 y_pos_ -= (height_frame_ + 1);
+//                 y_val_ = 0;
+
+//                 on_ground_ = true;
+//                 if (status_ == FALL || status_ == FLY)
+//                 {
+//                     status_ == WALK_RIGHT;
+//                 }
+//             }
+//             if (val2 == STATE_MONEY)
+//             {
+//                 map_data.tile[y2][x2] = 0;
+//                 IncreaseMoney();
+//             } else if (val2 != BLANK_TILE)
+//             {
+//                 y_pos_ = y2 * TILE_SIZE;
+//                 y_pos_ -= (height_frame_ + 1);
+//                 y_val_ = 0;
+
+//                 on_ground_ = true;
+//                 if (status_ == FALL || status_ == FLY)
+//                 {
+//                     status_ == WALK_RIGHT;
+//                 }
+//             }
+//         }
+//         else if (y_val_ < 0)
+//         {
+//             int val1 = map_data.tile[y1][x1];
+//             int val2 = map_data.tile[y1][x2];
+
+//             if (val1 == STATE_MONEY)
+//             {
+//                 map_data.tile[y1][x1] = 0;
+//                 IncreaseMoney();
+//             }
+//             else if (val1 != BLANK_TILE)
+//             {
+//                 y_pos_ = (y1 + 1) * TILE_SIZE;
+//                 y_val_ = 0;
+//             }
+//             if (val2 == STATE_MONEY)
+//             {
+//                 map_data.tile[y1][x2] = 0;
+//                 IncreaseMoney();
+//             }
+//             else if (val2 != BLANK_TILE)
+//             {
+//                 y_pos_ = (y1 + 1) * TILE_SIZE;
+//                 y_val_ = 0;
+//             }
+//         }
+//     }
+
+//     x_pos_ += x_val_;
+//     y_pos_ += y_val_;
+
+//     if (x_pos_ < 0)
+//     {
+//         x_pos_ = 0;
+//     }
+//     else if (x_pos_ + width_frame_ > map_data.max_x_)
+//     {
+//         x_pos_ = map_data.max_x_ - width_frame_ - 1;
+//     }
+
+//     if (y_pos_ > map_data.max_y_)
+//     {
+//         come_back_time_ = 60;
+//     }
+// }
 void MainObject::IncreaseMoney()
 {
     money_count++;
 }
-
+void MainObject::IncreaseScore()
+{
+    score_count++;
+}
 void MainObject::ShootNormal(SDL_Renderer *screen)
 {
     BulletObject *p_bullet = new BulletObject();
     p_bullet->set_bullet_type(BulletObject::LASER_BULLET);
     p_bullet->LoadImgBullet(screen);
 
-    if (status_ == WALK_LEFT)
-    {
-        p_bullet->set_bullet_dir(BulletObject::DIR_LEFT);
-        p_bullet->SetRect(this->rect_.x, this->rect_.y + height_frame_ * 0.5);
-    }
-    else
-    {
-        p_bullet->set_bullet_dir(BulletObject::DIR_RIGHT);
-        p_bullet->SetRect(this->rect_.x + width_frame_ - 20, this->rect_.y + height_frame_ * 0.5);
-    }
+    p_bullet->set_bullet_dir(BulletObject::DIR_RIGHT);
+    p_bullet->SetRect(this->rect_.x + width_frame_ - 20, this->rect_.y + height_frame_ * 0.5);
+
     p_bullet->set_x_val(20);
     p_bullet->set_y_val(20);
     p_bullet->set_is_move(true);
@@ -487,16 +638,9 @@ void MainObject::ShootR(SDL_Renderer *screen)
     p_bullet->set_bullet_type(BulletObject::R_BULLET);
     p_bullet->LoadImgBullet(screen);
 
-    if (status_ == WALK_LEFT)
-    {
-        p_bullet->set_bullet_dir(BulletObject::DIR_LEFT);
-        p_bullet->SetRect(this->rect_.x, this->rect_.y + height_frame_ * 0.25);
-    }
-    else
-    {
-        p_bullet->set_bullet_dir(BulletObject::DIR_RIGHT);
-        p_bullet->SetRect(this->rect_.x + width_frame_ - 20, rect_.y + height_frame_ * 0.25);
-    }
+    p_bullet->set_bullet_dir(BulletObject::DIR_RIGHT);
+    p_bullet->SetRect(this->rect_.x + width_frame_ - 20,this->rect_.y + height_frame_ * 0.25);
+    
     p_bullet->set_x_val(20);
     p_bullet->set_y_val(20);
     p_bullet->set_is_move(true);
@@ -506,43 +650,12 @@ void MainObject::ShootR(SDL_Renderer *screen)
 
 void MainObject::UpdateImagePlayer(SDL_Renderer *des)
 {
-    if (input_type_.shot_ == 1) 
+    if (on_ground_ == false) 
     {
-        if (status_ == WALK_LEFT) 
-        {
-            LoadImg("img//PLAYER//STAND_SHOT_LEFT.png",des);
-        }
-        else if (status_ == WALK_RIGHT)
-        {
-            LoadImg("img//PLAYER//STAND_SHOT_LEFT.png",des);
-        }
-    } else 
-    if (on_ground_ == true && input_type_.shot_ == 0) 
-    {
-        if (status_ == WALK_LEFT)
-        {
-            LoadImg("img//PLAYER//WALK_LEFT.png", des);
-        }
-        else if (status_ == WALK_RIGHT)
-        {
-            LoadImg("img//PLAYER//WALK_RIGHT.png", des);
-        } 
-        else if (status_ == WALK_NONE) 
-        {
-            if (status_front == WALK_LEFT) 
-                 LoadImg("img//PLAYER//STAND_LEFT.png",des);
-            else LoadImg("img//PLAYER//STAND_RIGHT.png",des);
-        } 
+        LoadImg("img//PLAYER//FLY_RIGHT.png", des);
     }
-    else if (on_ground_ == false && input_type_.shot_ == 0)
+    else 
     {
-        if (status_ == WALK_LEFT)
-        {
-            LoadImg("img//PLAYER//JUMP_LEFT.png", des);
-        }
-        else
-        {
-            LoadImg("img//PLAYER//JUMP_RIGHT.png", des);
-        }
+        LoadImg("img//PLAYER//WALK_RIGHT.png", des);
     }
 }

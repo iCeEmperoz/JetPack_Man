@@ -3,6 +3,8 @@
 
 #include "CommonFunc.h"
 
+#define GRAVITY_SPEED 0.8
+#define MAX_FALL_SPEED 5
 class BaseObject 
 {
     public:
@@ -18,6 +20,7 @@ class BaseObject
 
         virtual bool LoadImg(std::string path, SDL_Renderer* screen);
         void Render(SDL_Renderer* des, const SDL_Rect* clip = NULL);
+        void Render2(int x, int y, SDL_Renderer* des, SDL_Rect* clip = NULL);
         void Free();
     protected:
         SDL_Texture* p_object_;

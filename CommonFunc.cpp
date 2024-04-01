@@ -84,3 +84,7 @@ bool SDLCommonFunc::CheckCollision(const SDL_Rect& object1, const SDL_Rect& obje
     
     return false;
 }
+bool SDLCommonFunc::CheckMousePos(const int& x,const int& y,const SDL_Rect& Obj_)
+{
+	return (x >= Obj_.x && x <= Obj_.x + Obj_.w && y>= Obj_.y && y <= Obj_.y + Obj_.h);
+}

@@ -6,32 +6,27 @@
 #include "BulletObject.h"
 #include <vector>
 
-#define GRAVITY_SPEED 0.8
-#define MAX_FALL_SPEED 10
-#define PLAYER_SPEED 5
-#define PLAYER_JUMP_VAL 16
-#define MAIN_FRAME 10
+
 class MainObject : public BaseObject
 {
 public:
     MainObject();
     ~MainObject();
 
-    enum WalkType
+    enum STATUS
     {
         WALK_NONE,
         WALK_RIGHT,
-        WALK_LEFT,
         SHOT,
-        SHOT_RIGHT,
-        SHOT_LEFT,
+        FLY,
+        FALL,
     };
     bool LoadImg(std::string path, SDL_Renderer *screen);
     void Show(SDL_Renderer *des, int num_frame);
-    void HandelInputAction(SDL_Event envents, SDL_Renderer *screen);
+    void HandelInputAction(SDL_Event envents, SDL_Renderer *screen, Mix_Chunk* mChunk);
     void set_clip();
 
-    void DoPlayer(Map &map_data);
+    void DoPlayerX(Map &map_data);
     void CheckToMap(Map &map_data);
     void SetMapXY(const int map_x, const int map_y)
     {
@@ -57,13 +52,28 @@ public:
     void ShootNormal(SDL_Renderer *screen);
     void ShootR(SDL_Renderer *screen);
     void IncreaseMoney();
+    void IncreaseScore();
     int get_frame_width() const { return width_frame_; }
     int get_frame_height() const { return height_frame_; }
     void set_comback_time(const int &cb_time) { come_back_time_ = cb_time; }
     int GetMoneyCount() const { return money_count; }
+    int GetScoreCount() const {return score_count;}
+    void InitScoreCount() 
+    {
+        score_count = 0;
+    } 
+    void InitMoneyCount() 
+    {
+        money_count = 0;
+    }
     Input input_type_;
+    bool OnGround() {
+        return y_pos_ == GROUND;
+    };
+    bool is_pause;
 private:
     int money_count;
+    int score_count;
     std::vector<BulletObject *> p_bullet_list_;
     float x_val_;
     float y_val_;
@@ -82,7 +92,6 @@ private:
 
     int map_x_;
     int map_y_;
-
     int come_back_time_;
 };
 

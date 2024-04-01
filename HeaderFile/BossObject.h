@@ -8,8 +8,6 @@
 #include "CommonFunc.h"
 #include "BulletObject.h"
 
-#define GRAVITY_SPEED 0.8
-#define MAX_FALL_SPEED 10
 
 #define BOSS_SPEED 2
 #define PLAYER_HIGHT_VAL 18;

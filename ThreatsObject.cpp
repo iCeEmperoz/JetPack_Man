@@ -161,13 +161,13 @@ void ThreatsObject::ImpMoveType(SDL_Renderer *screen)
             {
                 input_type_.left_ = 1;
                 input_type_.right_ = 0;
-                LoadImg("img//plane_left.png", screen);
+                LoadImg("img//threat//plane_left.png", screen);
             }
             else if (x_pos_ < animation_a_)
             {
                 input_type_.left_ = 0;
                 input_type_.right_ = 1;
-                LoadImg("img//plane_right.png", screen);
+                LoadImg("img//threat//plane_right.png", screen);
             }
         }
         else if (on_ground_ == true)
@@ -177,18 +177,18 @@ void ThreatsObject::ImpMoveType(SDL_Renderer *screen)
                 input_type_.left_ = 1;
                 input_type_.right_ = 0;
                 if (type_threat_ == THREAT_2)
-                    LoadImg("img//threat2_left.png", screen);
+                    LoadImg("img//threat//threat2_left.png", screen);
                 else if (type_threat_ == THREAT_SURIKEN)
-                    LoadImg("img//suriken_2_left.png", screen);
+                    LoadImg("img//threat//suriken_2_left.png", screen);
             }
             else if (x_pos_ < animation_a_)
             {
                 input_type_.left_ = 0;
                 input_type_.right_ = 1;
                 if (type_threat_ == THREAT_2)
-                    LoadImg("img//threat2_right.png", screen);
+                    LoadImg("img//threat//threat2_right.png", screen);
                 else if (type_threat_ == THREAT_SURIKEN)
-                    LoadImg("img//suriken_2_right.png", screen);
+                    LoadImg("img//threat//suriken_2_right.png", screen);
             }
         }
         else
@@ -196,9 +196,9 @@ void ThreatsObject::ImpMoveType(SDL_Renderer *screen)
             if (input_type_.left_ == 1)
             {
                 if (type_threat_ == THREAT_2)
-                    LoadImg("img//threat2_left.png", screen);
+                    LoadImg("img//threat//threat2_left.png", screen);
                 else if (type_threat_ == THREAT_SURIKEN)
-                    LoadImg("img//suriken_2_left.png", screen);
+                    LoadImg("img//threat//suriken_2_left.png", screen);
             }
         }
     }
@@ -336,28 +336,19 @@ void ThreatsObject::InitBullet(BulletObject *p_bullet, SDL_Renderer *screen)
                 {
                     p_bullet->set_bullet_dir(BulletObject::DIR_RIGHT);
                 }
-                else
-                {
-                    p_bullet->set_bullet_dir(BulletObject::DIR_LEFT);
-                }
             }
             else
             {
                 p_bullet->set_bullet_dir(BulletObject::DIR_DOWN);
             }
-
-            // Thiết lập vị trí ban đầu của viên đạn liên quan đến đối tượng đe dọa
-            // Điều chỉnh vị trí nếu cần để đảm bảo viên đạn xuất phát từ vị trí chính xác
-            int bulletX = x_pos_ + (width_frame_ / 2) - map_x_;  // Điều chỉnh tùy theo nhu cầu
-            int bulletY = y_pos_ + (height_frame_ / 2) - map_y_; // Điều chỉnh tùy theo nhu cầu
-            p_bullet->SetRect(bulletX, bulletY);
-
+            p_bullet->setPosXY(x_pos_ + width_frame_/2,y_pos_ + height_frame_/2);
             p_bullet->set_x_val(15);
             p_bullet->set_y_val(5);
             bullet_list_.push_back(p_bullet);
         }
     }
 }
+
 void ThreatsObject::MakeBullet(SDL_Renderer *screen, const int &x_limit, const int &y_limit)
 {
     for (int i = 0; i < bullet_list_.size(); i++)
@@ -367,41 +358,13 @@ void ThreatsObject::MakeBullet(SDL_Renderer *screen, const int &x_limit, const i
         {
             if (p_bullet->get_is_move())
             {
-                if (type_threat_ != THREAT_PLANE)
-                {
-                    int bullet_distance = rect_.x + width_frame_ - p_bullet->GetRect().x;
-                    if (bullet_distance < 300 && bullet_distance > (-300))
-                    {
-                        p_bullet->HandleMove(x_limit, y_limit);
-                        p_bullet->Render(screen);
-                    }
-                    else
-                    {
-                        p_bullet->set_is_move(false);
-                    }
-                }
-                else
-                {
-                    int bullet_distance = y_pos_ + height_frame_ - p_bullet->GetRect().y;
-                    if (bullet_distance < 300 && bullet_distance > (-300))
-                    {
-                        p_bullet->HandleMove(x_limit, y_limit);
-                        p_bullet->Render(screen);
-                    }
-                    else
-                    {
-                        p_bullet->set_is_move(false);
-                    }
-                }
+                p_bullet->setMapXY(map_x_,map_y_);
+                p_bullet->HandelMove();
+                p_bullet->Render(screen);
             }
             else
             {
-                // Nếu viên đạn không di chuyển, thiết lập lại vị trí của nó liên quan đến đối tượng đe dọa
-                // int bulletX = x_pos_ + (width_frame_ / 2) ;  // Không cần điều chỉnh với map_x_
-                // int bulletY = rect_.y + (height_frame_ / 2) ; // Không cần điều chỉnh với map_y_
-                p_bullet->SetRect(rect_.x + width_frame_/2  , rect_.y + height_frame_/2);
-
-                // Đặt hướng viên đạn dựa trên loại đe dọa
+                p_bullet->setPosXY(x_pos_ + width_frame_/2,y_pos_ + height_frame_/2);
                 if (type_threat_ != THREAT_PLANE)
                 {
                     if (input_type_.left_ == 1)

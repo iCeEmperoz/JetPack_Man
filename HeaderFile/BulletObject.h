@@ -36,7 +36,7 @@ public:
     void set_y_val(const int &yVal) { y_val_ = yVal; }
     int get_x_val() const { return x_val_; }
     int get_y_val() const { return y_val_; }
-
+    
     void set_is_move(const bool &isMove) { is_move_ = isMove; }
     bool get_is_move() const { return is_move_; }
 
@@ -52,10 +52,19 @@ public:
         map_x_ = mp_x;
         map_y_ = mp_y;
     }
+    void setPosXY(const float& pos_x,const float& pos_y)
+    {
+        x_pos_ = pos_x;
+        y_pos_ = pos_y;
+    }
     bool LoadImgBullet(SDL_Renderer *des);
+    void HandelMove();
 private:
     int map_x_;
     int map_y_;
+    int distance_;
+    float x_pos_;
+    float y_pos_;
     int x_val_;
     int y_val_;
     bool is_move_;

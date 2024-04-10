@@ -28,7 +28,8 @@ const int COLOR_KEY_G=175;
 const int COLOR_KEY_B=180;
 
 const int RENDER_DRAW_COLOR = 0xff;
-const int BACKGROUND_LAYER = 7;
+const int BACKGROUND_LAYER = 9;
+const int COIN_LAYER = 9;
 const double LAYER_1_SPEED = 0.0;
 const double LAYER_2_SPEED = 0.25; 
 const double LAYER_3_SPEED = 0.5;
@@ -47,12 +48,12 @@ const double LAYER_9_SPEED = 2.0;
 #define TIME_MAX 1000
 #define GROUND 520
 
-#define PLAYER_SPEED 5
-#define STEP_SPEED 0.5
-#define MAX_SPEED 10
+#define SPEED_INCREASEMENT 2
+#define SCORE_INCREASEMENT 1
+#define TIME_INCREASEMENT 1
 
 #define PLAYER_SPEED_FLY 2
-#define PLAYER_JUMP_VAL 4
+#define PLAYER_JUMP_VAL 5
 
 #define MAIN_FRAME 10
 #define STATE_MONEY 4
@@ -62,6 +63,18 @@ const double LAYER_9_SPEED = 2.0;
 #define NOT_REPEATITIVE 0
 
 #define BASE_OFFSET_SPEED 0
+
+const std::string LAYER[BACKGROUND_LAYER] = {
+	"img//background//cave//1.png",
+	"img//background//cave//2.png",
+	"img//background//cave//3.png",
+	"img//background//cave//4.png",
+	"img//background//cave//5.png",
+	"img//background//cave//6.png",
+	"img//background//cave//7.png",
+	"img//background//cave//8.png",
+	"img//background//cave//9.png",
+};
 
 struct Input
 {
@@ -91,5 +104,6 @@ namespace SDLCommonFunc
 {
     bool CheckCollision(const SDL_Rect& object1, const SDL_Rect& object2);
     bool CheckMousePos(const int& x,const int& y,const SDL_Rect& Obj_);
+    int UpdateGameTimeAndScore(int &time, int &speed, int &score);
 }
 #endif

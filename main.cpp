@@ -1,6 +1,5 @@
 #include "HeaderFile/CommonFunc.h"
 #include "HeaderFile/BaseObject.h"
-#include "HeaderFile/game_map.h"
 #include "HeaderFile/MainObject.h"
 #include "HeaderFile/ImpTimer.h"
 #include "HeaderFile/ThreatsObject.h"
@@ -8,40 +7,26 @@
 #include "HeaderFile/TextObject.h"
 #include "HeaderFile/PlayerPower.h"
 #include "HeaderFile/Geometric.h"
-#include "HeaderFile/BossObject.h"
+#include "HeaderFile/Item.h"
 #include <SDL2/SDL_mixer.h>
-#include "thread"
-#include "chrono"
+#include <cstdlib>
+#include <ctime>
+
 BaseObject g_background;
 BaseObject g_backgroundTexture[BACKGROUND_LAYER];
 BaseObject g_menu_screen;
 int OffsetSpeed_Ground = BASE_OFFSET_SPEED;
-std::vector <double> OffsetSpeed_Bkgr(BACKGROUND_LAYER, BASE_OFFSET_SPEED);	
+std::vector<double> OffsetSpeed_Bkgr(BACKGROUND_LAYER, BASE_OFFSET_SPEED);
 Mix_Music *gMusic = nullptr;
 Mix_Music *gMenuMusic = nullptr;
 Mix_Chunk *gClick = nullptr;
 Mix_Chunk *gLose = nullptr;
 Mix_Chunk *gMove = nullptr;
 Mix_Chunk *gShot = nullptr;
-TTF_Font *font_time = NULL;
-TTF_Font *g_font_MENU = NULL;
-const std::string LAYER[BACKGROUND_LAYER] = {
-	"img//background//1.png",
-	"img//background//2.png",
-	"img//background//3.png",
-	"img//background//4.png",
-	"img//background//5.png",
-	"img//background//6.png",
-	"img//background//7.png",
-};
-std::string ConvertWideToANSI(const wchar_t *wideStr)
-{
-	int len = WideCharToMultiByte(CP_ACP, 0, wideStr, -1, nullptr, 0, nullptr, nullptr);
-	std::string result(len, '\0');
-	WideCharToMultiByte(CP_ACP, 0, wideStr, -1, &result[0], len, nullptr, nullptr);
-	return result;
-}
-
+Mix_Chunk *gCoin = nullptr;
+TTF_Font *font_ = NULL;
+bool SPEEDING = false;
+bool checking = false;
 bool InitData()
 {
 	bool success = true;
@@ -75,8 +60,8 @@ bool InitData()
 		{
 			success = false;
 		}
-		font_time = TTF_OpenFont("font//dlxfont_.ttf", 15);
-		if (font_time == NULL)
+		font_ = TTF_OpenFont("font//dlxfont_.ttf", 15);
+		if (font_ == NULL)
 		{
 			success = false;
 		}
@@ -86,7 +71,7 @@ bool InitData()
 
 void LoadBackground()
 {
-	std::vector <double> layer_speed;
+	std::vector<double> layer_speed;
 	layer_speed.push_back(LAYER_1_SPEED);
 	layer_speed.push_back(LAYER_2_SPEED);
 	layer_speed.push_back(LAYER_3_SPEED);
@@ -94,6 +79,8 @@ void LoadBackground()
 	layer_speed.push_back(LAYER_5_SPEED);
 	layer_speed.push_back(LAYER_6_SPEED);
 	layer_speed.push_back(LAYER_7_SPEED);
+	layer_speed.push_back(LAYER_8_SPEED);
+	layer_speed.push_back(LAYER_9_SPEED);
 	for (int i = 0; i < BACKGROUND_LAYER; ++i)
 	{
 		OffsetSpeed_Bkgr[i] -= layer_speed[i];
@@ -111,47 +98,52 @@ bool LoadMedia()
 	bool success = true;
 	for (int i = 0; i < BACKGROUND_LAYER; ++i)
 	{
-				if (!g_backgroundTexture[i].LoadImg(LAYER[i].c_str(), g_screen))
-				{
-					std::cout << "Failed to load background image" << std::endl;
-					success = false;
-				}
+		if (!g_backgroundTexture[i].LoadImg(LAYER[i].c_str(), g_screen))
+		{
+			std::cout << "Failed to load background image" << std::endl;
+			success = false;
+		}
 	}
-	gMusic = Mix_LoadMUS("sound/bkgr_audio.wav");
+	gMusic = Mix_LoadMUS("sound/Jetpack.wav");
 	if (gMusic == nullptr)
 	{
 		success = false;
 	}
-
-	gMenuMusic = Mix_LoadMUS("sound/menu_audio.wav");
+	gMenuMusic = Mix_LoadMUS("sound/MusFruitKilla.wav");
 	if (gMenuMusic == nullptr)
 	{
-		success = false;				
+		success = false;
 	}
 
 	gClick = Mix_LoadWAV("sound/mouse_click.wav");
 	if (gClick == nullptr)
 	{
-		success = false;				
+		success = false;
 	}
 
 	gLose = Mix_LoadWAV("sound/lose_sound.wav");
 	if (gLose == nullptr)
 	{
-		success = false;				
+		success = false;
 	}
 	gMove = Mix_LoadWAV("sound/mouse_move.wav");
 	if (gMove == nullptr)
 	{
-		success = false;				
+		success = false;
 	}
 	gShot = Mix_LoadWAV("sound/shot.wav");
 	if (gShot == nullptr)
 	{
-		success = false;				
+		success = false;
+	}
+	gCoin = Mix_LoadWAV("sound//coin.wav");
+	if (gCoin == nullptr)
+	{
+		success = false;
 	}
 	return success;
 }
+
 void close()
 {
 	g_background.Free();
@@ -164,12 +156,14 @@ void close()
 	Mix_FreeMusic(gMenuMusic);
 	Mix_FreeChunk(gClick);
 	Mix_FreeChunk(gLose);
+	Mix_FreeChunk(gCoin);
 	gMusic = nullptr;
 	gMenuMusic = nullptr;
 	gClick = nullptr;
 	gLose = nullptr;
 	gMove = nullptr;
 	gShot = nullptr;
+	gCoin = nullptr;
 	IMG_Quit();
 	Mix_Quit();
 	SDL_Quit();
@@ -179,99 +173,161 @@ std::vector<ThreatsObject *> MakeThreatList()
 {
 	std::vector<ThreatsObject *> list_threats;
 
-	ThreatsObject *dymaic_threats = new ThreatsObject[75];
-
-	for (int i = 0; i < 30; i++)
+	ThreatsObject *dymaic_threats = new ThreatsObject[4];
+	ThreatsObject *p_threat = (dymaic_threats);
+	for (int i = 0; i < 2; i++)
 	{
-		ThreatsObject *p_threat = (dymaic_threats + i);
+		p_threat = (dymaic_threats + i);
 		if (p_threat != NULL)
 		{
 			p_threat->LoadImg("img//threat//suriken_2_left.png", g_screen);
 			p_threat->set_clips();
 			p_threat->set_type_threat(ThreatsObject::THREAT_SURIKEN);
-			p_threat->set_type_move(ThreatsObject::MOVE_IN_SPACE_THREAT);
-			p_threat->set_x_pos(500 + i * 600);
-			p_threat->set_y_pos(500);
-			p_threat->set_input_left(1);
-			int pos1 = p_threat->get_x_pos() - 100;
-			int pos2 = p_threat->get_x_pos() + 100;
-			p_threat->SetAnimationPos(pos1, pos2);
+			p_threat->set_x_pos(rand() % (SCREEN_WIDTH + THREAT_POSITION_RANGE) + SCREEN_WIDTH);
+			p_threat->set_y_pos(rand() % (SCREEN_HEIGHT - 120 - 120) + 120);
 			list_threats.push_back(p_threat);
 		}
 	}
 	// second dynamic
-	for (int i = 30; i < 60; i++)
+	p_threat = (dymaic_threats + 2);
+	if (p_threat != NULL)
 	{
-		ThreatsObject *p_threat = (dymaic_threats + i);
-		if (p_threat != NULL)
-		{
-			p_threat->LoadImg("img//threat//threat2_left.png", g_screen);
-			p_threat->set_clips();
-			p_threat->set_type_threat(ThreatsObject::THREAT_2);
-			p_threat->set_type_move(ThreatsObject::MOVE_IN_SPACE_THREAT);
-			p_threat->set_x_pos(700 + (i - 30) * 500);
-			p_threat->set_y_pos(200);
-			p_threat->set_input_left(1);
-			int pos1 = p_threat->get_x_pos() - 60;
-			int pos2 = p_threat->get_x_pos() + 60;
-			BulletObject *p_bullet = new BulletObject();
-			p_threat->InitBullet(p_bullet, g_screen);
-			p_threat->SetAnimationPos(pos1, pos2);
-			list_threats.push_back(p_threat);
-		}
+		p_threat->LoadImg("img//threat//threat2_left.png", g_screen);
+		p_threat->set_clips();
+		p_threat->set_type_threat(ThreatsObject::THREAT_2);
+		p_threat->set_x_pos(rand() % (SCREEN_WIDTH + THREAT_POSITION_RANGE) + SCREEN_WIDTH);
+		p_threat->set_y_pos(rand() % (SCREEN_HEIGHT - 120 - 120) + 120);
+		BulletObject *p_bullet = new BulletObject();
+		p_threat->InitBullet(p_bullet, g_screen);
+		list_threats.push_back(p_threat);
 	}
-	// plane threat
-	for (int i = 60; i < 75; i++)
+	// plane
+	p_threat = (dymaic_threats + 3);
+	if (p_threat != NULL)
 	{
-		ThreatsObject *p_threat = (dymaic_threats + i);
-		if (p_threat != NULL)
-		{
-			p_threat->LoadImg("img//threat//plane_left.png", g_screen);
-			p_threat->set_clips();
-			p_threat->set_type_threat(ThreatsObject::THREAT_PLANE);
-			p_threat->set_type_move(ThreatsObject::MOVE_IN_SPACE_THREAT);
-			p_threat->set_x_pos(700 + (i - 60) * 1280);
-			p_threat->set_y_pos(100);
-			p_threat->set_input_left(1);
-			int pos1 = p_threat->get_x_pos() - 150;
-			int pos2 = p_threat->get_x_pos() + 150;
-			BulletObject *p_bullet = new BulletObject();
-			p_threat->InitBullet(p_bullet, g_screen);
-			p_threat->SetAnimationPos(pos1, pos2);
-			list_threats.push_back(p_threat);
-		}
+		p_threat->LoadImg("img//threat//plane_left.png", g_screen);
+		p_threat->set_clips();
+		p_threat->set_type_threat(ThreatsObject::THREAT_PLANE);
+		BulletObject *p_bullet = new BulletObject();
+		p_threat->set_x_pos(rand() % (SCREEN_WIDTH + THREAT_POSITION_RANGE) + SCREEN_WIDTH);
+		p_threat->set_y_pos(rand() % (SCREEN_HEIGHT - 120 - 120) + 120);
+		p_threat->InitBullet(p_bullet, g_screen);
+		list_threats.push_back(p_threat);
 	}
 	return list_threats;
 }
 
+std::vector<Item *> MakeCoinList(int x)
+{
+	std::string filename = "coin//" + std::to_string(x) + ".txt";
+	std::ifstream file(filename);
+	int n, m, c;
+	file >> n >> m;
+	std::vector<Item *> coin_list;
+	float xpos = rand() % (SCREEN_WIDTH + THREAT_POSITION_RANGE) + SCREEN_WIDTH;
+	float ypos = rand() % (SCREEN_HEIGHT / 2);
+	for (int i = 0; i < n; ++i)
+	{
+		ypos += 32;
+		for (int j = 0; j < m; j++)
+		{
+			file >> c;
+			if (c != 0)
+			{
+				Item *coin = new Item();
+				coin->LoadImg("img//Item//COIN.png", g_screen, ITEM_FRAME_NUM);
+				coin->set_clips(ITEM_FRAME_NUM);
+				coin->set_x_pos(xpos + j * 32);
+				coin->set_y_pos(ypos);
+				coin_list.push_back(coin);
+			}
+		}
+	}
+	file.close();
+	return coin_list;
+}
+Item *MakeRandomItem(int x)
+{
+	std::string name_item = "img//Item//" + std::to_string(x) + ".png";
+	Item *item = new Item();
+	float xpos = SCREEN_WIDTH + THREAT_POSITION_RANGE;
+	float ypos = (SCREEN_HEIGHT / 2);
+	item->LoadImg(name_item, g_screen, ITEM_FRAME_NUM);
+	item->set_clips(ITEM_FRAME_NUM);
+	item->set_x_pos(xpos);
+	item->set_y_pos(ypos);
+	item->set_y_start(ypos);
+	return item;
+}
+void RecreateItem(Item* &item, int x)
+{
+	if (item != NULL && item->IsOffScreenLeft())
+	{
+		item->Free();
+		delete item;
+		item = NULL;
+	}
+	if (item == NULL)
+	{
+		item = MakeRandomItem(x);
+	}
+}
+void RecreateCoinList(std::vector<Item *> &coins_list, int x)
+{
+	// Kiểm tra xem danh sách có đồng xu nào đi ra khỏi màn hình không
+	for (int i = 0; i < coins_list.size();)
+	{
+		Item *coin = coins_list.at(i);
+		if (coin->IsOffScreenLeft())
+		{
+			coins_list.erase(coins_list.begin() + i);
+			coin->Free();
+		}
+		else
+			i++;
+	}
+	if (coins_list.empty())
+	{
+		coins_list = MakeCoinList(x);
+	}
+}
+
+void RecreateThreatList(std::vector<ThreatsObject *> &threats_list)
+{
+	for (int i = 0; i < threats_list.size();)
+	{
+		ThreatsObject *threat = threats_list.at(i);
+		if (threat->IsOffScreen())
+		{
+			threat->Free();
+			threats_list.erase(threats_list.begin() + i);
+		}
+		else
+			i++;
+	}
+	if (threats_list.empty())
+	{
+		threats_list = MakeThreatList();
+	}
+}
 
 int main(int argc, char *args[])
 {
+	srand(time(NULL));
 	ImpTimer fps_timer;
-
 	if (InitData() == false)
 		return -1;
 	if (LoadMedia() == false)
 		return -1;
-	// Make menu game
-	GameMap game_map;
-	
-
 	MainObject p_player;
 	p_player.LoadImg("img//PLAYER//WALK_RIGHT.png", g_screen);
 	p_player.set_clip();
-	
 
 	PlayerPower player_power;
 
 	PlayerMoney player_money;
 	player_money.Init(g_screen);
 	player_money.SetPos(SCREEN_WIDTH * 0.5 - 300, 8);
-
-	// Boss Threat
-	BossObject boss_object;
-	boss_object.LoadImg("img//boss_object.png", g_screen);
-	
 
 	// Explosision
 	ExplosionObject exp_threat;
@@ -283,9 +339,6 @@ int main(int argc, char *args[])
 	exp_main.set_clip(MAIN_FRAME_EXP);
 	if (!mRet)
 		return -1;
-	// Time text
-	TextObject time_game;
-	time_game.SetColor(TextObject::WHITE_TEXT);
 	// Score text
 	TextObject score_game;
 	score_game.SetColor(TextObject::WHITE_TEXT);
@@ -389,26 +442,20 @@ int main(int argc, char *args[])
 	while (Play_Again)
 	{
 		Mix_PlayMusic(gMusic, IS_REPEATITIVE);
-		game_map.Load_Map("map//map01.dat");
-		game_map.LoadTiles(g_screen);
-
+		int time_ = 0;
+		int acceleration = 0;
+		int score = 0;
+		int accel_speed = 50;
+		int time_count = 200;
 		p_player.InitMoneyCount();
 		p_player.InitScoreCount();
-		
 		int num_die = 0;
 		is_quit = false;
 
-		p_player.set_x_pos(0);
-		p_player.set_y_pos(GROUND);
 		player_power.Init(g_screen);
-
+		Item *item = MakeRandomItem(1);
 		std::vector<ThreatsObject *> threats_list = MakeThreatList();
-
-		boss_object.set_clips();
-		int xPosBoss = MAX_MAP_X * TILE_SIZE - SCREEN_WIDTH * 0.6;
-		boss_object.set_xpos(xPosBoss);
-		boss_object.set_ypos(10);
-
+		std::vector<Item *> coins_list = MakeCoinList(rand() % 9);
 		std::ifstream file("BEST_SCORE.txt");
 		int bscore;
 		file >> bscore;
@@ -418,12 +465,20 @@ int main(int argc, char *args[])
 		std::string strb_score("BEST: ");
 		strb_score += b_score;
 		std::vector<ExplosionObject *> explosion_list;
-		// map
-		
+
 		while (!is_quit)
 		{
+			SDLCommonFunc::UpdateGameTimeAndScore(time_, acceleration, score);
+			RecreateCoinList(coins_list, rand() % (9));
+			RecreateThreatList(threats_list);
+			if (score % 400 == 0)
+			{
+				RecreateItem(item, 1);
+				checking = true;
+			}
 			fps_timer.start();
-			while (SDL_PollEvent(&g_event) != 0)
+
+			while (SDL_PollEvent(&g_event) != 0)                             
 			{
 				if (g_event.type == SDL_QUIT)
 				{
@@ -508,18 +563,55 @@ int main(int argc, char *args[])
 			}
 			SDL_SetRenderDrawColor(g_screen, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR);
 			SDL_RenderClear(g_screen);
-			
+
 			LoadBackground();
-			Map map_data = game_map.getMap();
 
-			p_player.HandleBullet(g_screen);
-			p_player.SetMapXY(map_data.start_x_, map_data.start_y_);
-			p_player.DoPlayerX(map_data);
+			p_player.HandleBullet(g_screen, acceleration);
+			if (SPEEDING == false)
+			p_player.DoPlayerX(acceleration);
+			
 			p_player.Show(g_screen, MAIN_FRAME);
+			if (SPEEDING == true && time_count > 0)
+			{
+				time_count--;
+				acceleration = accel_speed;      
+			} else if (time_count == 0)
+			{
+				SPEEDING = false;
+				time_count = 200;
+				acceleration = 0;
+				checking = false;
+			}
+			if (item != NULL && checking == true)
+			{
+				item->Move_sin(acceleration);
+				item->Show(g_screen, ITEM_FRAME_NUM);
 
-			game_map.SetMap(map_data);
-			game_map.DrawMap(g_screen);
-
+				SDL_Rect rect_player = p_player.GetRectFrame();
+				SDL_Rect rect_item = item->GetRectFrame();
+				if (SDLCommonFunc::CheckCollision(rect_item, rect_player))
+				{
+					SPEEDING = true;
+					item->Free();
+					delete item;
+					item = NULL;
+				}
+			}
+			for (int i = 0; i < coins_list.size();)
+			{
+				Item *coins = coins_list.at(i);
+				coins->Move(acceleration);
+				coins->Show(g_screen, ITEM_FRAME_NUM);
+				SDL_Rect rect_player = p_player.GetRectFrame();
+				SDL_Rect rect_item = coins->GetRectFrame();
+				if (SDLCommonFunc::CheckCollision(rect_item, rect_player))
+				{
+					Mix_PlayChannel(MIX_CHANNEL, gCoin, 0);
+					coins->Free();
+					coins_list.erase(coins_list.begin() + i);
+					p_player.IncreaseMoney();
+				} else i++;
+			}
 			// Draw Geometric
 			GeometricFormat rectangle_size(0, 0, SCREEN_WIDTH, 40);
 			ColorData color_data(36, 36, 36);
@@ -540,12 +632,11 @@ int main(int argc, char *args[])
 				ThreatsObject *p_threat = threats_list.at(i);
 				if (p_threat != NULL)
 				{
-					p_threat->SetMapXY(map_data.start_x_, map_data.start_y_);
 					p_threat->ImpMoveType(g_screen);
-					p_threat->DoPlayer(map_data);
+					p_threat->Move(acceleration);
 
 					p_threat->Show(g_screen);
-					p_threat->MakeBullet(g_screen, SCREEN_WIDTH, SCREEN_HEIGHT);
+					p_threat->MakeBullet(g_screen, SCREEN_WIDTH, SCREEN_HEIGHT, acceleration);
 
 					SDL_Rect rect_player = p_player.GetRectFrame();
 					bool bCol1 = false;
@@ -565,107 +656,108 @@ int main(int argc, char *args[])
 						}
 					}
 					SDL_Rect rect_threat = p_threat->GetRectFrame();
-					bool bCol2 = SDLCommonFunc::CheckCollision(rect_player, rect_threat);
+					bool bCol2 = SDLCommonFunc::CheckCollision(rect_threat, rect_player);
 
-					// if (bCol1 || bCol2)
-					// {
-					// 	ExplosionObject *newExplosion = new ExplosionObject();
-					// 	newExplosion->LoadImg("img//PLAYER//DEAD_RIGHT.png", g_screen, MAIN_FRAME_EXP);
-					// 	newExplosion->set_clip(MAIN_FRAME_EXP);
-					// 	int px_pos = (p_player.GetRect().x + p_player.get_frame_width() * 0.5) - exp_main.get_frame_width() * 0.5;
-					// 	int py_pos = (p_player.GetRect().y + p_player.get_frame_height() * 0.5) - exp_main.get_frame_height() * 0.5;
-					// 	newExplosion->SetRect(px_pos, py_pos);
-					// 	explosion_list.push_back(newExplosion);
-					// 	num_die++;
-					// 	if (num_die < 3)
-					// 	{
-					// 		p_player.SetRect(0, 0);
-					// 		p_player.set_comback_time(60);
-					// 		// SDL_Delay(1000);
-					// 		Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
-					// 		player_power.Decrease();
-					// 		player_power.Render(g_screen);
-					// 		continue;
-					// 	}
-					// 	else
-					// 	{
-					// 		Mix_PauseMusic();
-					// 		Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
-					// 		g_menu_screen.LoadImg("img//menu//o_menu.png", g_screen);
-					// 		BaseObject ExitButton[2];
-					// 		ExitButton[0].LoadImg("img//menu//EXIT_N.png", g_screen);
-					// 		ExitButton[1].LoadImg("img//menu//EXIT.png", g_screen);
-					// 		ExitButton[0].SetRect(360, 350);
-					// 		ExitButton[1].SetRect(360, 350);
-					// 		BaseObject NewGameButton[2];
-					// 		NewGameButton[0].LoadImg("img//menu//NEWGAME_N.png", g_screen);
-					// 		NewGameButton[1].LoadImg("img//menu//NEWGAME.png", g_screen);
-					// 		NewGameButton[0].SetRect(360, 260);
-					// 		NewGameButton[1].SetRect(360, 260);
-					// 		int MousePosX = 0;
-					// 		int MousePosY = 0;
-					// 		bool menu_p_quit = false;
-					// 		while (!menu_p_quit)
-					// 		{
-					// 			SDL_RenderClear(g_screen);
-					// 			g_menu_screen.Render(g_screen, NULL);
-					// 			while (SDL_PollEvent(&two_event) != 0)
-					// 			{
-					// 				if (two_event.type == SDL_MOUSEMOTION)
-					// 				{
-					// 					MousePosX = two_event.motion.x;
-					// 					MousePosY = two_event.motion.y;
-					// 					if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, ExitButton[0].GetRect()) == true)
-					// 					{
-					// 						Mix_PlayChannel(MIX_CHANNEL, gMove, 0);
-					// 					}
-					// 					if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, NewGameButton[0].GetRect()) == true)
-					// 					{
-					// 						Mix_PlayChannel(MIX_CHANNEL, gMove, 0);
-					// 					}
-					// 				}
-					// 				if (two_event.type == SDL_MOUSEBUTTONDOWN)
-					// 				{
-					// 					if (two_event.button.button == SDL_BUTTON_LEFT)
-					// 					{
-					// 						if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, ExitButton[0].GetRect()) == true)
-					// 						{
-					// 							menu_p_quit = true;
-					// 							is_quit = true;
-					// 							Play_Again = false;
-					// 							g_menu_screen.Free();
-					// 							quit = true;
-					// 							// p_threat->Free();
-					// 							// close();
-					// 							// SDL_Quit();
-					// 							// return 0;
-					// 						}
-					// 						if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, NewGameButton[0].GetRect()) == true)
-					// 						{
-					// 							menu_p_quit = true;
-					// 							is_quit = true;
-					// 							quit = false;
-					// 							Play_Again = true;
-					// 						}
-					// 					}
-					// 				}
-					// 			}
-					// 			ExitButton[0].Render(g_screen);
-					// 			NewGameButton[0].Render(g_screen);
-					// 			if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, ExitButton[0].GetRect()) == true)
-					// 			{
-					// 				ExitButton[1].Render(g_screen);
-					// 			}
-					// 			if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, NewGameButton[0].GetRect()) == true)
-					// 			{
-					// 				NewGameButton[1].Render(g_screen);
-					// 			}
-					// 			SDL_RenderPresent(g_screen);
-					// 		}
-					// 	}
-					// }
+					if ((bCol1 || bCol2) && SPEEDING == false)
+					{
+   						ExplosionObject *newExplosion = new ExplosionObject();
+						newExplosion->LoadImg("img//PLAYER//DEAD_RIGHT.png", g_screen, MAIN_FRAME_EXP);
+						newExplosion->set_clip(MAIN_FRAME_EXP);
+						int px_pos = (p_player.GetRect().x + p_player.get_frame_width() * 0.5) - exp_main.get_frame_width() * 0.5;
+						int py_pos = (p_player.GetRect().y + p_player.get_frame_height() * 0.5) - exp_main.get_frame_height() * 0.5;
+						newExplosion->SetRect(px_pos, py_pos);
+						explosion_list.push_back(newExplosion);
+						num_die++;
+						if (num_die < 3)
+						{
+							threats_list.clear();
+							p_player.set_comback_time(60);
+							// SDL_Delay(1000);
+							Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
+							player_power.Decrease();
+							player_power.Render(g_screen);
+							continue;
+						}
+						else
+						{
+							Mix_PauseMusic();
+							Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
+							g_menu_screen.LoadImg("img//menu//o_menu.png", g_screen);
+							BaseObject ExitButton[2];
+							ExitButton[0].LoadImg("img//menu//EXIT_N.png", g_screen);
+							ExitButton[1].LoadImg("img//menu//EXIT.png", g_screen);
+							ExitButton[0].SetRect(360, 350);
+							ExitButton[1].SetRect(360, 350);
+							BaseObject NewGameButton[2];
+							NewGameButton[0].LoadImg("img//menu//NEWGAME_N.png", g_screen);
+							NewGameButton[1].LoadImg("img//menu//NEWGAME.png", g_screen);
+							NewGameButton[0].SetRect(360, 260);
+							NewGameButton[1].SetRect(360, 260);
+							int MousePosX = 0;
+							int MousePosY = 0;
+							bool menu_p_quit = false;
+							while (!menu_p_quit)
+							{
+								SDL_RenderClear(g_screen);
+								g_menu_screen.Render(g_screen, NULL);
+								while (SDL_PollEvent(&two_event) != 0)
+								{
+									if (two_event.type == SDL_MOUSEMOTION)
+									{
+										MousePosX = two_event.motion.x;
+										MousePosY = two_event.motion.y;
+										if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, ExitButton[0].GetRect()) == true)
+										{
+											Mix_PlayChannel(MIX_CHANNEL, gMove, 0);
+										}
+										if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, NewGameButton[0].GetRect()) == true)
+										{
+											Mix_PlayChannel(MIX_CHANNEL, gMove, 0);
+										}
+									}
+									if (two_event.type == SDL_MOUSEBUTTONDOWN)
+									{
+										if (two_event.button.button == SDL_BUTTON_LEFT)
+										{
+											if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, ExitButton[0].GetRect()) == true)
+											{
+												menu_p_quit = true;
+												is_quit = true;
+												Play_Again = false;
+												g_menu_screen.Free();
+												quit = true;
+												// p_threat->Free();
+												// close();
+												// SDL_Quit();
+												// return 0;
+											}
+											if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, NewGameButton[0].GetRect()) == true)
+											{
+												menu_p_quit = true;
+												is_quit = true;
+												quit = false;
+												Play_Again = true;
+											}
+										}
+									}
+								}
+								ExitButton[0].Render(g_screen);
+								NewGameButton[0].Render(g_screen);
+								if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, ExitButton[0].GetRect()) == true)
+								{
+									ExitButton[1].Render(g_screen);
+								}
+								if (SDLCommonFunc::CheckMousePos(MousePosX, MousePosY, NewGameButton[0].GetRect()) == true)
+								{
+									NewGameButton[1].Render(g_screen);
+								}
+								SDL_RenderPresent(g_screen);
+							}
+						}
+					}
 				}
-				if (quit == true) break;
+				if (quit == true)
+					break;
 			}
 
 			std::vector<BulletObject *> bullet_arr = p_player.get_bullet_list();
@@ -699,8 +791,8 @@ int main(int argc, char *args[])
 								newExplosion->SetRect(tx_pos, ty_pos);
 								explosion_list.push_back(newExplosion);
 								p_player.RemoveBullet(r);
-								obj_threat->Free();
 								threats_list.erase(threats_list.begin() + t);
+								obj_threat->Free();
 							}
 						}
 					}
@@ -712,44 +804,20 @@ int main(int argc, char *args[])
 				ExplosionObject *newExplosion = explosion_list.at(ex);
 				if (newExplosion != NULL)
 				{
-					newExplosion->SetMapXY(map_data.start_x_, map_data.start_y_);
-
 					newExplosion->Show(g_screen, NUM_FRAME_EXP);
 					if (newExplosion->get_animation_loop() > 0)
 					{
-						newExplosion->Free();
 						explosion_list.erase(explosion_list.begin() + ex);
+						newExplosion->Free();
 					}
 				}
 			}
-			// Show game time
-			std::string str_time = "TIME: ";
-			Uint32 time_val = SDL_GetTicks() / 1000;
-			Uint32 val_time = 300 - time_val;
-			if (val_time <= 0)
-			{
-				if (MessageBox(NULL, ConvertWideToANSI(L"GAME OVER").c_str(), ConvertWideToANSI(L"Info").c_str(), (MB_OK | MB_ICONSTOP)) == IDOK)
-				{
-					is_quit = true;
-					break;
-				}
-			}
-			else
-			{
-				std::string str_val = std::to_string(val_time);
-				str_time += str_val;
-
-				time_game.SetText(str_time);
-				time_game.LoadFromRenderText(font_time, g_screen);
-				time_game.RenderText(g_screen, SCREEN_WIDTH - 200, 15);
-			}
 			// Show score and money
-			int score = p_player.GetScoreCount();
 			std::string score_str = std::to_string(score);
 			std::string strScore("SCORE: ");
 			strScore += score_str;
 			score_game.SetText(strScore);
-			score_game.LoadFromRenderText(font_time, g_screen);
+			score_game.LoadFromRenderText(font_, g_screen);
 			score_game.RenderText(g_screen, SCREEN_WIDTH * 0.5 - 50, 15);
 
 			if (score > bscore)
@@ -760,24 +828,15 @@ int main(int argc, char *args[])
 				strb_score += b_score;
 			}
 			best_score.SetText(strb_score);
-			best_score.LoadFromRenderText(font_time, g_screen);
+			best_score.LoadFromRenderText(font_, g_screen);
 			best_score.RenderText(g_screen, SCREEN_WIDTH * 0.5 + 200, 15);
 			int money_count = p_player.GetMoneyCount();
 			std::string money_str = std::to_string(money_count);
 
 			money_game.SetText(money_str);
-			money_game.LoadFromRenderText(font_time, g_screen);
+			money_game.LoadFromRenderText(font_, g_screen);
 			money_game.RenderText(g_screen, SCREEN_WIDTH * 0.5 - 250, 15);
 
-			// Show boss
-			int val = MAX_MAP_X * TILE_SIZE - (map_data.start_x_ + p_player.GetRect().x);
-			if (val <= SCREEN_WIDTH)
-			{
-				boss_object.SetMapXY(map_data.start_x_, map_data.start_y_);
-				boss_object.DoPlayer(map_data);
-				boss_object.MakeBullet(g_screen, SCREEN_WIDTH, SCREEN_HEIGHT);
-				boss_object.Show(g_screen);
-			}
 			SDL_RenderPresent(g_screen);
 
 			int real_imp_time = fps_timer.get_ticks();
@@ -793,16 +852,27 @@ int main(int argc, char *args[])
 			}
 		}
 		// Delete Threat
-		for (int i = 0; i < threats_list.size(); i++)
+		if (!Play_Again)
+		{
+			for (int i = 0; i < threats_list.size(); i++)
 			{
 				ThreatsObject *p_threat = threats_list.at(i);
 				if (p_threat)
 				{
 					p_threat->Free();
-					p_threat = NULL;
 				}
 			}
-		threats_list.clear();
+			threats_list.clear();
+			for (int i = 0; i < coins_list.size(); i++)
+			{
+				Item *coin = coins_list.at(i);
+				if (coin)
+				{
+					coin->Free();
+				}
+			}
+			coins_list.clear();
+		}
 		file.close();
 		std::ofstream outfile("BEST_SCORE.txt");
 		outfile << bscore;

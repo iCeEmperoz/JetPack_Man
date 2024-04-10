@@ -4,18 +4,13 @@
 MainObject::MainObject()
 {
     frame_ = 0;
-    x_pos_ = 0;
-    y_pos_ = 0;
+    x_pos_ = SCREEN_WIDTH - 1100;
+    y_pos_ = GROUND;
     x_val_ = 0;
     y_val_ = 0;
     width_frame_ = 0;
     height_frame_ = 0;
     status_ = WALK_RIGHT;
-    input_type_.left_ = 0;
-    input_type_.right_ = 0;
-    input_type_.jump_ = 0;
-    input_type_.down_ = 0;
-    input_type_.up_ = 0;
 
     on_ground_ = false;
     map_x_ = 0;
@@ -69,28 +64,32 @@ void MainObject::set_clip()
     }
 }
 
-void MainObject::HandelInputAction(SDL_Event events, SDL_Renderer *screen, Mix_Chunk* mChunk)
+void MainObject::HandelInputAction(SDL_Event events, SDL_Renderer *screen, Mix_Chunk *mChunk)
 {
-    if (events.type == SDL_KEYDOWN)
+    if (come_back_time_ == 0) 
     {
-        switch (events.key.keysym.sym)
+        if (events.type == SDL_KEYDOWN)
         {
+            switch (events.key.keysym.sym)
+            {
             case SDLK_SPACE:
-                {
-                    status_ = FLY; 
-                }
-                break;
+            {
+                status_ = FLY;
+            }
+            break;
             case SDLK_r:
-                {
-                    ShootR(screen);
-                } break;
+            {
+                ShootR(screen);
+            }
+            break;
             case SDLK_ESCAPE:
-                {
-                    is_pause = true;
-                } break;
+            {
+                is_pause = true;
+            }
+            break;
+            }
         }
-    }
-    else if (events.type == SDL_KEYUP)
+        else if (events.type == SDL_KEYUP)
         {
             switch (events.key.keysym.sym)
             {
@@ -102,14 +101,15 @@ void MainObject::HandelInputAction(SDL_Event events, SDL_Renderer *screen, Mix_C
             }
         }
 
-     if (events.type == SDL_MOUSEBUTTONDOWN)
+        if (events.type == SDL_MOUSEBUTTONDOWN)
         {
             if (events.button.button == SDL_BUTTON_LEFT)
             {
-                Mix_PlayChannel(MIX_CHANNEL,mChunk,0);
+                Mix_PlayChannel(MIX_CHANNEL, mChunk, 0);
                 ShootNormal(screen);
             }
         }
+    }
 }
 void MainObject::Show(SDL_Renderer *des, int num_frame)
 {
@@ -122,8 +122,8 @@ void MainObject::Show(SDL_Renderer *des, int num_frame)
 
     if (come_back_time_ == 0)
     {
-        rect_.x = x_pos_ - map_x_;
-        rect_.y = y_pos_ - map_y_;
+        rect_.x = x_pos_;
+        rect_.y = y_pos_;
         SDL_Rect *current_clip = &frame_clip_[frame_];
 
         SDL_Rect renderQuad = {rect_.x, rect_.y, width_frame_, height_frame_};
@@ -132,7 +132,7 @@ void MainObject::Show(SDL_Renderer *des, int num_frame)
     }
 }
 
-void MainObject::HandleBullet(SDL_Renderer *des)
+void MainObject::HandleBullet(SDL_Renderer *des, int acceleration)
 {
     for (int i = 0; i < p_bullet_list_.size(); i++)
     {
@@ -144,7 +144,7 @@ void MainObject::HandleBullet(SDL_Renderer *des)
                 int bullet_distance = rect_.x + width_frame_ - p_bullet->GetRect().x;
                 if (bullet_distance < 400 && bullet_distance > (-400))
                 {
-                    p_bullet->HandleMove(SCREEN_WIDTH, SCREEN_HEIGHT);
+                    p_bullet->HandleMove(SCREEN_WIDTH, SCREEN_HEIGHT, acceleration);
                     p_bullet->Render(des);
                 }
                 else
@@ -181,437 +181,43 @@ void MainObject::RemoveBullet(const int &idx)
     }
 }
 
-
-void MainObject::DoPlayerX(Map &map_data)
+void MainObject::DoPlayerX(int acceleration)
 {
     if (come_back_time_ == 0)
     {
-        x_val_ += STEP_SPEED;
-        y_val_ += GRAVITY_SPEED;
-
-        if (y_val_ >= MAX_FALL_SPEED)
-        {
-            y_val_ = MAX_FALL_SPEED;
-        }
-        if (x_val_ >= MAX_SPEED) 
-        {
-            x_val_ = MAX_SPEED;
-        }
         if (status_ == FLY)
         {
-            // if (on_ground_ == true)
-            // {
-                y_val_ = -PLAYER_JUMP_VAL;
-            // }
-            on_ground_ = false;
+            y_pos_ -= (PLAYER_JUMP_VAL+acceleration);
         }
-        IncreaseScore();
-        CheckToMap(map_data);
-        CenterEntityOnMap(map_data);
+        if (y_pos_ <= 40)
+        {
+            y_pos_ = 40;
+            status_ == FALL;
+        }
+        if (status_ == FALL && y_pos_ < GROUND)
+        {
+            y_pos_ += GRAVITY_SPEED+acceleration;
+        }
+        if (y_pos_ > GROUND) 
+        {
+            y_pos_ = GROUND;
+        }
     }
-    // if(come_back_time_ == 0)
-    // {
-    //     if (status_ == FLY)
-    //     {
-    //         y_pos_ -= PLAYER_JUMP_VAL;
-    //     }
-    //     if (y_pos_ <= 0) status_ == FALL;
-    //     if (status_ == FALL && y_pos_ < GROUND)
-    //     {
-    //         y_pos_ += GRAVITY_SPEED;
-    //     } 
-    // }
     if (come_back_time_ > 0)
     {
         come_back_time_--;
         if (come_back_time_ == 0) // Reset again
         {
-            on_ground_ = false;
-            if (x_pos_ >= 256)
-            {
-            }
-            else
-            {
-                x_pos_ = 0;
-            }
-            y_pos_ = 0;
-            x_val_ = 0;
-            y_val_ = 0;
+            x_pos_ = SCREEN_WIDTH - 900;
+            y_pos_ = GROUND;
         }
     }
 }
-
-void MainObject::CenterEntityOnMap(Map &map_data)
-{
-    map_data.start_x_ = x_pos_ - (SCREEN_WIDTH - 900);
-    if (map_data.start_x_ < 0)
-    {
-        map_data.start_x_ = 0;
-    }
-    else if (map_data.start_x_ + SCREEN_WIDTH >= map_data.max_x_)
-    {
-        map_data.start_x_ = map_data.max_x_ - SCREEN_WIDTH;
-    }
-
-    map_data.start_y_ = y_pos_ - (SCREEN_HEIGHT / 2);
-
-    if (map_data.start_y_ < 0)
-    {
-        map_data.start_y_ = 0;
-    }
-    else if (map_data.start_y_ + SCREEN_HEIGHT >= map_data.max_y_)
-    {
-        map_data.start_y_ = map_data.max_y_ - SCREEN_HEIGHT;
-    }
-}
-
-void MainObject::CheckToMap(Map &map_data)
-{
-    int x1 = 0;
-    int x2 = 0;
-
-    int y1 = 0;
-    int y2 = 0;
-
-    // Check horizontal
-    int height_min = height_frame_ < TILE_SIZE ? height_frame_ : TILE_SIZE;
-
-    x1 = (x_pos_ + x_val_) / TILE_SIZE;
-    x2 = (x_pos_ + x_val_ + width_frame_ - 1) / TILE_SIZE;
-
-    y1 = (y_pos_) / TILE_SIZE;
-    y2 = (y_pos_ + height_min - 1) / TILE_SIZE;
-
-    /*
-        x1,y1********x2,y1
-        *            *
-        *            *
-        *            *
-        x1,y2********x2,y2
-    */
-
-    if (x1 >= 0 && x2 < MAX_MAP_X && y1 >= 0 && y2 < MAX_MAP_Y)
-    {
-        if (x_val_ > 0) // main object is moving to right
-        {
-
-            int val1 = map_data.tile[y1][x2];
-            int val2 = map_data.tile[y2][x2];
-
-            if (val1 == STATE_MONEY || val2 == STATE_MONEY)
-            {
-                map_data.tile[y1][x2] = 0;
-                map_data.tile[y2][x2] = 0;
-                IncreaseMoney();
-            }
-            else
-            {
-                if (val1 != BLANK_TILE || val2 != BLANK_TILE)
-                {
-                    x_pos_ = x2 * TILE_SIZE;
-                    x_pos_ -= width_frame_ + 1;
-                    x_val_ = 0;
-                }
-            }
-        }
-        else if (x_val_ < 0)
-        {
-            int val1 = map_data.tile[y1][x1];
-            int val2 = map_data.tile[y2][x1];
-
-            if (val1 == STATE_MONEY || val2 == STATE_MONEY)
-            {
-                map_data.tile[y1][x1] = 0;
-                map_data.tile[y2][x1] = 0;
-                IncreaseMoney();
-            }
-            else
-            {
-                if (val1 != BLANK_TILE || val2 != BLANK_TILE)
-                {
-                    x_pos_ = (x1 + 1) * TILE_SIZE;
-                    x_val_ = 0;
-                }
-            }
-        }
-    }
-
-    // Check vertical
-
-    int width_min = width_frame_ < TILE_SIZE ? width_frame_ : TILE_SIZE;
-    x1 = (x_pos_) / TILE_SIZE;
-    x2 = (x_pos_ + width_min) / TILE_SIZE;
-
-    y1 = (y_pos_ + y_val_) / TILE_SIZE;
-    y2 = (y_pos_ + y_val_ + height_frame_ - 1) / TILE_SIZE;
-
-    if (x1 >= 0 && x2 < MAX_MAP_X && y1 >= 0 && y2 < MAX_MAP_Y)
-    {
-        if (y_val_ > 0)
-        {
-
-            int val1 = map_data.tile[y2][x1];
-            int val2 = map_data.tile[y2][x2];
-
-            if (val1 == STATE_MONEY || val2 == STATE_MONEY)
-            {
-                map_data.tile[y2][x1] = 0;
-                map_data.tile[y2][x2] = 0;
-                IncreaseMoney();
-            }
-            else
-            {
-                if (val1 != BLANK_TILE || val2 != BLANK_TILE)
-                {
-                    y_pos_ = y2 * TILE_SIZE;
-                    y_pos_ -= (height_frame_ + 1);
-                    y_val_ = 0;
-
-                    on_ground_ = true;
-                    if (status_ == FALL || status_ == FLY)
-                    {
-                        status_ == WALK_RIGHT;
-                    }
-                }
-            }
-        }
-        else if (y_val_ < 0)
-        {
-            int val1 = map_data.tile[y1][x1];
-            int val2 = map_data.tile[y1][x2];
-
-            if (val1 == STATE_MONEY || val2 == STATE_MONEY)
-            {
-                map_data.tile[y1][x1] = 0;
-                map_data.tile[y1][x2] = 0; 
-                IncreaseMoney();
-            }
-            else
-            {
-                if (val1 != BLANK_TILE || val2 != BLANK_TILE)
-                {
-                    y_pos_ = (y1 + 1) * TILE_SIZE;
-                    y_val_ = 0;
-                }
-            }
-        }
-    }
-
-    x_pos_ += x_val_;
-    y_pos_ += y_val_;
-
-    if (x_pos_ < 0)
-    {
-        x_pos_ = 0;
-    }
-    else if (x_pos_ + width_frame_ > map_data.max_x_)
-    {
-        x_pos_ = map_data.max_x_ - width_frame_ - 1;
-    }
-
-    if (y_pos_ > map_data.max_y_)
-    {
-        come_back_time_ = 60;
-    }
-}
-// void MainObject::CheckToMap(Map &map_data)
-// {
-//     int x1 = 0;
-//     int x2 = 0;
-
-//     int y1 = 0;
-//     int y2 = 0;
-
-//     // Check horizontal
-//     int height_min = height_frame_ < TILE_SIZE ? height_frame_ : TILE_SIZE;
-
-//     x1 = (x_pos_ + x_val_) / TILE_SIZE;
-//     x2 = (x_pos_ + x_val_ + width_frame_ - 1) / TILE_SIZE;
-
-//     y1 = (y_pos_) / TILE_SIZE;
-//     y2 = (y_pos_ + height_min - 1) / TILE_SIZE;
-
-//     /*
-//         x1,y1********x2,y1
-//         *            *
-//         *            *
-//         *            *
-//         x1,y2********x2,y2
-//     */
-
-//     if (x1 >= 0 && x2 < MAX_MAP_X && y1 >= 0 && y2 < MAX_MAP_Y)
-//     {
-//         if (x_val_ > 0) // main object is moving to right
-//         {
-
-//             int val1 = map_data.tile[y1][x2];
-//             int val2 = map_data.tile[y2][x2];
-
-//             if (val1 == STATE_MONEY)
-//             {
-//                 map_data.tile[y1][x2] = 0;
-//                 IncreaseMoney();
-//             } 
-//             else if (val1 != BLANK_TILE)
-//                 {
-//                     x_pos_ = x2 * TILE_SIZE;
-//                     x_pos_ -= width_frame_ + 1;
-//                     x_val_ = 0;
-//                 }
-//             if (val2 == STATE_MONEY)
-//             {
-//                 map_data.tile[y2][x2] = 0;
-//                 IncreaseMoney();
-//             }
-//             else if (val2 != BLANK_TILE)
-//                 {
-//                     x_pos_ = x2 * TILE_SIZE;
-//                     x_pos_ -= width_frame_ + 1;
-//                     x_val_ = 0;
-//                 }
-//         }
-//         else if (x_val_ < 0)
-//         {
-//             int val1 = map_data.tile[y1][x1];
-//             int val2 = map_data.tile[y2][x1];
-
-//             // if (val1 == STATE_MONEY || val2 == STATE_MONEY)
-//             // {
-//             //     map_data.tile[y1][x1] = 0;
-//             //     map_data.tile[y2][x1] = 0;
-//             //     IncreaseMoney();
-//             // }
-//             // else
-//             // {
-//             //     if (val1 != BLANK_TILE || val2 != BLANK_TILE)
-//             //     {
-//             //         x_pos_ = (x1 + 1) * TILE_SIZE;
-//             //         x_val_ = 0;
-//             //     }
-//             // }
-//             if (val1 == STATE_MONEY)
-//             {
-//                 map_data.tile[y1][x1] = 0;
-//                 IncreaseMoney();
-//             } 
-//             else if (val1 != BLANK_TILE)
-//                 {
-//                     x_pos_ = (x1 + 1) * TILE_SIZE;
-//                     x_val_ = 0;
-//                 }
-//             if (val2 == STATE_MONEY)
-//             {
-//                 map_data.tile[y2][x1] = 0;
-//                 IncreaseMoney();
-//             }
-//             else if (val2 != BLANK_TILE)
-//                 {
-//                     x_pos_ = (x1 + 1) * TILE_SIZE;
-//                     x_val_ = 0;
-//                 }
-//         }
-//     }
-
-//     // Check vertical
-
-//     int width_min = width_frame_ < TILE_SIZE ? width_frame_ : TILE_SIZE;
-//     x1 = (x_pos_) / TILE_SIZE;
-//     x2 = (x_pos_ + width_min) / TILE_SIZE;
-
-//     y1 = (y_pos_ + y_val_) / TILE_SIZE;
-//     y2 = (y_pos_ + y_val_ + height_frame_ - 1) / TILE_SIZE;
-
-//     if (x1 >= 0 && x2 < MAX_MAP_X && y1 >= 0 && y2 < MAX_MAP_Y)
-//     {
-//         if (y_val_ > 0)
-//         {
-
-//             int val1 = map_data.tile[y2][x1];
-//             int val2 = map_data.tile[y2][x2];
-
-//             if (val1 == STATE_MONEY)
-//             {
-//                 map_data.tile[y2][x2] = 0;
-//                 IncreaseMoney();
-//             }
-//             else if (val1 != BLANK_TILE)
-//             {
-//                 y_pos_ = y2 * TILE_SIZE;
-//                 y_pos_ -= (height_frame_ + 1);
-//                 y_val_ = 0;
-
-//                 on_ground_ = true;
-//                 if (status_ == FALL || status_ == FLY)
-//                 {
-//                     status_ == WALK_RIGHT;
-//                 }
-//             }
-//             if (val2 == STATE_MONEY)
-//             {
-//                 map_data.tile[y2][x2] = 0;
-//                 IncreaseMoney();
-//             } else if (val2 != BLANK_TILE)
-//             {
-//                 y_pos_ = y2 * TILE_SIZE;
-//                 y_pos_ -= (height_frame_ + 1);
-//                 y_val_ = 0;
-
-//                 on_ground_ = true;
-//                 if (status_ == FALL || status_ == FLY)
-//                 {
-//                     status_ == WALK_RIGHT;
-//                 }
-//             }
-//         }
-//         else if (y_val_ < 0)
-//         {
-//             int val1 = map_data.tile[y1][x1];
-//             int val2 = map_data.tile[y1][x2];
-
-//             if (val1 == STATE_MONEY)
-//             {
-//                 map_data.tile[y1][x1] = 0;
-//                 IncreaseMoney();
-//             }
-//             else if (val1 != BLANK_TILE)
-//             {
-//                 y_pos_ = (y1 + 1) * TILE_SIZE;
-//                 y_val_ = 0;
-//             }
-//             if (val2 == STATE_MONEY)
-//             {
-//                 map_data.tile[y1][x2] = 0;
-//                 IncreaseMoney();
-//             }
-//             else if (val2 != BLANK_TILE)
-//             {
-//                 y_pos_ = (y1 + 1) * TILE_SIZE;
-//                 y_val_ = 0;
-//             }
-//         }
-//     }
-
-//     x_pos_ += x_val_;
-//     y_pos_ += y_val_;
-
-//     if (x_pos_ < 0)
-//     {
-//         x_pos_ = 0;
-//     }
-//     else if (x_pos_ + width_frame_ > map_data.max_x_)
-//     {
-//         x_pos_ = map_data.max_x_ - width_frame_ - 1;
-//     }
-
-//     if (y_pos_ > map_data.max_y_)
-//     {
-//         come_back_time_ = 60;
-//     }
-// }
 void MainObject::IncreaseMoney()
 {
     money_count++;
 }
+
 void MainObject::IncreaseScore()
 {
     score_count++;
@@ -639,8 +245,8 @@ void MainObject::ShootR(SDL_Renderer *screen)
     p_bullet->LoadImgBullet(screen);
 
     p_bullet->set_bullet_dir(BulletObject::DIR_RIGHT);
-    p_bullet->SetRect(this->rect_.x + width_frame_ - 20,this->rect_.y + height_frame_ * 0.25);
-    
+    p_bullet->SetRect(this->rect_.x + width_frame_ - 20, this->rect_.y + height_frame_ * 0.25);
+
     p_bullet->set_x_val(20);
     p_bullet->set_y_val(20);
     p_bullet->set_is_move(true);
@@ -650,11 +256,11 @@ void MainObject::ShootR(SDL_Renderer *screen)
 
 void MainObject::UpdateImagePlayer(SDL_Renderer *des)
 {
-    if (on_ground_ == false) 
+    if (OnGround() == false)
     {
         LoadImg("img//PLAYER//FLY_RIGHT.png", des);
     }
-    else 
+    else
     {
         LoadImg("img//PLAYER//WALK_RIGHT.png", des);
     }

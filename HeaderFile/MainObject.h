@@ -26,18 +26,11 @@ public:
     void HandelInputAction(SDL_Event envents, SDL_Renderer *screen, Mix_Chunk* mChunk);
     void set_clip();
 
-    void DoPlayerX(Map &map_data);
-    void CheckToMap(Map &map_data);
-    void SetMapXY(const int map_x, const int map_y)
-    {
-        map_x_ = map_x;
-        map_y_ = map_y;
-    };
+    void DoPlayerX(int acceleration);
     void set_x_pos(const float &xp) { x_pos_ = xp; }
     void set_y_pos(const float &yp) { y_pos_ = yp; }
     float get_x_pos() const {return x_pos_;}
     float get_y_pos() const {return y_pos_;} 
-    void CenterEntityOnMap(Map &map_data);
     void UpdateImagePlayer(SDL_Renderer *des);
     SDL_Rect GetRectFrame();
 
@@ -47,7 +40,7 @@ public:
     }
 
     std::vector<BulletObject *> get_bullet_list() const { return p_bullet_list_; }
-    void HandleBullet(SDL_Renderer *des);
+    void HandleBullet(SDL_Renderer *des, int acceleration);
     void RemoveBullet(const int &idx);
     void ShootNormal(SDL_Renderer *screen);
     void ShootR(SDL_Renderer *screen);

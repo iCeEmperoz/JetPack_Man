@@ -32,8 +32,6 @@ public:
     float get_x_pos() const {return x_pos_;}
     float get_y_pos() const {return y_pos_;}
 
-    void SetMapXY(const int& mp_x,const int& mp_y){map_x_ = mp_x,map_y_ = mp_y;}
-
     int get_animation_loop() const {return animation_loop_;}
 private:
     int frame_width_;
@@ -44,8 +42,6 @@ private:
     float y_pos_;
     float x_val_;
     float y_val_;
-    int map_x_;
-    int map_y_;
     int animation_loop_;
     SDL_Rect frame_clip_[NUM_FRAME_EXP];
 

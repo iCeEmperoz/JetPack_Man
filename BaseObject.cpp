@@ -56,6 +56,8 @@ void BaseObject::Free()
     {
         SDL_DestroyTexture(p_object_);
         p_object_ = NULL;
+        rect_.x =0;
+        rect_.y =0;
         rect_.w = 0;
         rect_.h = 0;    
     }

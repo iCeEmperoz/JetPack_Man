@@ -46,22 +46,14 @@ public:
     void set_bullet_type(const unsigned int &bulletType) { bullet_type_ = bulletType; }
     unsigned int get_bullet_type() const { return bullet_type_; }
 
-    void HandleMove(const int &x_border, const int &y_border);
-    void setMapXY(const int& mp_x,const int& mp_y)
-    {
-        map_x_ = mp_x;
-        map_y_ = mp_y;
-    }
+    void HandleMove(const int &x_border, const int &y_border, int acceleration);
     void setPosXY(const float& pos_x,const float& pos_y)
     {
         x_pos_ = pos_x;
         y_pos_ = pos_y;
     }
     bool LoadImgBullet(SDL_Renderer *des);
-    void HandelMove();
 private:
-    int map_x_;
-    int map_y_;
     int distance_;
     float x_pos_;
     float y_pos_;

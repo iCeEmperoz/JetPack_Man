@@ -10,13 +10,13 @@
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
 #include <fstream>
+#include <cstdlib>
+#include <ctime>
 static SDL_Window* g_window = NULL;
 static SDL_Renderer* g_screen = NULL;
 static SDL_Event g_event;
 static SDL_Event two_event;
 
-static Mix_Chunk* g_sound_bullet[2];
-static Mix_Chunk* g_sound_exp[2];
 //Screen
 const int FRAME_PER_SECOND = 45; // fps
 const int SCREEN_WIDTH=1280;
@@ -29,21 +29,10 @@ const int COLOR_KEY_B=180;
 
 const int RENDER_DRAW_COLOR = 0xff;
 const int BACKGROUND_LAYER = 9;
-const int COIN_LAYER = 9;
-const double LAYER_1_SPEED = 0.0;
-const double LAYER_2_SPEED = 0.25; 
-const double LAYER_3_SPEED = 0.5;
-const double LAYER_4_SPEED = 0.75;
-const double LAYER_5_SPEED = 1.0;
-const double LAYER_6_SPEED = 1.25;
-const double LAYER_7_SPEED = 1.5;
-const double LAYER_8_SPEED = 1.75;
-const double LAYER_9_SPEED = 2.0;
+
+#define ACCEL_SPEED 50
 #define BLANK_TILE 0
 #define TILE_SIZE 64
-
-#define MAX_MAP_X 400
-#define MAX_MAP_Y 10
 
 #define TIME_MAX 1000
 #define GROUND 520
@@ -55,7 +44,7 @@ const double LAYER_9_SPEED = 2.0;
 #define PLAYER_SPEED_FLY 2
 #define PLAYER_JUMP_VAL 5
 
-#define MAIN_FRAME 10
+#define MAIN_FRAME 15
 #define STATE_MONEY 4
 #define MIX_CHANNEL -1
 
@@ -87,23 +76,9 @@ struct Input
     int fly_;
 };
 
-struct Map 
-{
-    int start_x_;
-    int start_y_;
 
-    int max_x_;
-    int max_y_;
 
-    int tile[MAX_MAP_Y][MAX_MAP_X];
-    std::string file_name_;
-    
-};
-
-namespace SDLCommonFunc
-{
-    bool CheckCollision(const SDL_Rect& object1, const SDL_Rect& object2);
-    bool CheckMousePos(const int& x,const int& y,const SDL_Rect& Obj_);
-    int UpdateGameTimeAndScore(int &time, int &speed, int &score);
-}
+bool CheckCollision(const SDL_Rect& object1, const SDL_Rect& object2);
+bool CheckMousePos(const int& x,const int& y,const SDL_Rect& Object);
+int UpdateGameTimeAndScore(int &time, int &speed, int &score);
 #endif

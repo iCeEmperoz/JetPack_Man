@@ -9,7 +9,7 @@ BulletObject::BulletObject()
     x_pos_ = 0;
     y_pos_ = 0;
     distance_ = 0;
-}
+} 
 
 BulletObject::~BulletObject()
 {
@@ -58,7 +58,7 @@ void BulletObject::HandleMove(const int &x_border, const int &y_border, int acce
     case DIR_LEFT:
         {
             rect_.x -=( x_val_ + acceleration);
-            if (rect_.x < 0) 
+            if (rect_.x < 0 || rect_.x > x_border) 
             {
                 is_move_ = false;
             }

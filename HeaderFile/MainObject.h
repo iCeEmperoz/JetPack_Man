@@ -39,37 +39,25 @@ public:
         p_bullet_list_ = bullet_list;
     }
 
-    std::vector<BulletObject *> get_bullet_list() const { return p_bullet_list_; }
+    std::vector<BulletObject *> get_bullet_list() const { return p_bullet_list_;}
     void HandleBullet(SDL_Renderer *des, int acceleration);
     void RemoveBullet(const int &idx);
     void ShootNormal(SDL_Renderer *screen);
-    void ShootR(SDL_Renderer *screen);
     void IncreaseMoney();
     void IncreaseScore();
     int get_frame_width() const { return width_frame_; }
     int get_frame_height() const { return height_frame_; }
-    void set_comback_time(const int &cb_time) { come_back_time_ = cb_time; }
-    int GetMoneyCount() const { return money_count; }
-    int GetScoreCount() const {return score_count;}
-    void InitScoreCount() 
-    {
-        score_count = 0;
-    } 
-    void InitMoneyCount() 
-    {
-        money_count = 0;
-    }
+    void set_comback_time(const int &cb_time) { come_back_time_ = cb_time;}
+    int get_comback_time() const {return come_back_time_;}
+
     Input input_type_;
     bool OnGround() {
         return y_pos_ == GROUND;
     };
     bool is_pause;
 private:
-    int money_count;
-    int score_count;
+    
     std::vector<BulletObject *> p_bullet_list_;
-    float x_val_;
-    float y_val_;
 
     float x_pos_;
     float y_pos_;
@@ -83,8 +71,6 @@ private:
     int status_front;
     bool on_ground_;
 
-    int map_x_;
-    int map_y_;
     int come_back_time_;
 };
 

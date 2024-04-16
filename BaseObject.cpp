@@ -46,9 +46,9 @@ void BaseObject::Render(SDL_Renderer *des, const SDL_Rect *clip /* NULL*/)
 
 void BaseObject::Render2(int x, int y, SDL_Renderer* des, SDL_Rect* clip)
 {
-	SDL_Rect renderSpace = { x, y, rect_.w, rect_.h };
+	SDL_Rect renderquad = { x, y, rect_.w, rect_.h };
 
-	SDL_RenderCopy(des, p_object_, clip, &renderSpace);
+	SDL_RenderCopy(des, p_object_, clip, &renderquad);
 }
 void BaseObject::Free()
 {
@@ -56,9 +56,5 @@ void BaseObject::Free()
     {
         SDL_DestroyTexture(p_object_);
         p_object_ = NULL;
-        rect_.x =0;
-        rect_.y =0;
-        rect_.w = 0;
-        rect_.h = 0;    
     }
 }

@@ -67,22 +67,15 @@ void ThreatsObject::Move(const int &acceleration)
 {
     x_pos_ -= (THREAT_SPEED + acceleration);
 }
-bool ThreatsObject::IsOffScreen()
+bool ThreatsObject::IsOffScreenLeft()
 {
     return x_pos_ < 0;
 }
-void ThreatsObject::ImpMoveType(SDL_Renderer *screen)
+bool ThreatsObject::IsOffScreenRight()
 {
-
-    if (type_threat_ == THREAT_PLANE)
-    {
-        LoadImg("img//threat//plane_left.png", screen);
-    }
-    else if (type_threat_ == THREAT_2)
-        LoadImg("img//threat//threat2_left.png", screen);
-    else if (type_threat_ == THREAT_SURIKEN)
-        LoadImg("img//threat//suriken_2_left.png", screen);
+    return x_pos_ > SCREEN_WIDTH;
 }
+
 
 void ThreatsObject::InitBullet(BulletObject *p_bullet, SDL_Renderer *screen)
 {

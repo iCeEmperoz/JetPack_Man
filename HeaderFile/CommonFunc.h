@@ -31,8 +31,8 @@ const int RENDER_DRAW_COLOR = 0xff;
 const int BACKGROUND_LAYER = 9;
 
 #define ACCEL_SPEED 50
-#define BLANK_TILE 0
-#define TILE_SIZE 64
+#define GRAVITY_SPEED 3
+#define MAX_FALL_SPEED 6
 
 #define TIME_MAX 1000
 #define GROUND 520
@@ -65,20 +65,8 @@ const std::string LAYER[BACKGROUND_LAYER] = {
 	"img//background//cave//9.png",
 };
 
-struct Input
-{
-    int left_;
-    int right_;
-    int up_;
-    int down_;
-    int jump_;
-    int shot_;
-    int fly_;
-};
-
-
-
 bool CheckCollision(const SDL_Rect& object1, const SDL_Rect& object2);
 bool CheckMousePos(const int& x,const int& y,const SDL_Rect& Object);
 int UpdateGameTimeAndScore(int &time, int &speed, int &score);
+
 #endif

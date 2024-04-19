@@ -22,10 +22,12 @@ bool CheckCollision(const SDL_Rect& object1, const SDL_Rect& object2)
 
     return horizontalOverlap && verticalOverlap;
 }
+
 bool CheckMousePos(const int& x,const int& y,const SDL_Rect& Object)
 {
 	return (x >= Object.x && x <= Object.x + Object.w && y>= Object.y && y <= Object.y + Object.h);
 }
+
 int UpdateGameTimeAndScore(int &time, int &speed, int &score) 
 {
 	if (time == TIME_MAX)

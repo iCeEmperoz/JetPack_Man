@@ -6,16 +6,16 @@
 #include "HeaderFile/ExplosionObject.h"
 #include "HeaderFile/TextObject.h"
 #include "HeaderFile/PlayerPower.h"
-#include "HeaderFile/Geometric.h"
 #include "HeaderFile/GameUtils.h"
 #include "HeaderFile/Item.h"
-
 
 BaseObject g_background;
 BaseObject g_backgroundTexture[BACKGROUND_LAYER];
 BaseObject g_menu_screen;
+
 int OffsetSpeed_Ground = BASE_OFFSET_SPEED;
 std::vector<double> OffsetSpeed_Bkgr(BACKGROUND_LAYER, BASE_OFFSET_SPEED);
+
 Mix_Music *gMusic = nullptr;
 Mix_Music *gMenuMusic = nullptr;
 Mix_Chunk *gClick = nullptr;
@@ -25,6 +25,14 @@ Mix_Chunk *gShot = nullptr;
 Mix_Chunk *gCoin = nullptr;
 TTF_Font *font_ = NULL;
 
+MainObject p_player;
+
+PlayerPower player_power;
+PlayerMoney player_money;
+
+TextObject best_score;
+TextObject score_game;
+TextObject money_game;
 bool InitData()
 {
 	bool success = true;
@@ -134,7 +142,18 @@ bool LoadMedia()
 	{
 		success = false;
 	}
+
+	p_player.LoadImg("img//PLAYER//WALK_WITH_GUN.png", g_screen);
+	p_player.set_clip();
+
+	player_money.Init(g_screen);
+	player_money.SetPos(0, 40);
+
+	best_score.SetColor(TextObject::WHITE_TEXT);
+	score_game.SetColor(TextObject::WHITE_TEXT);
+	money_game.SetColor(TextObject::WHITE_TEXT);
 	return success;
+
 }
 
 void close()
@@ -150,6 +169,8 @@ void close()
 	Mix_FreeChunk(gClick);
 	Mix_FreeChunk(gLose);
 	Mix_FreeChunk(gCoin);
+	Mix_FreeChunk(gMove);
+	Mix_FreeChunk(gShot);
 	gMusic = nullptr;
 	gMenuMusic = nullptr;
 	gClick = nullptr;
@@ -169,78 +190,39 @@ void close()
 	SDL_Quit();
 }
 
-
 int main(int argc, char *args[])
 {
 	srand(time(NULL));
-	ImpTimer fps_timer;
+	int start_tick_ = 0;
 	if (InitData() == false)
 		return -1;
 	if (LoadMedia() == false)
 		return -1;
-	MainObject p_player;
-	p_player.LoadImg("img//PLAYER//WALK_WITH_GUN.png", g_screen);
-	p_player.set_clip();
 
-	PlayerPower player_power;
-
-	PlayerMoney player_money;
-	player_money.Init(g_screen);
-	player_money.SetPos(0, 40);
-
-	// Explosision
-	ExplosionObject exp_threat;
-	bool tRet = exp_threat.LoadImg("img//explosion//Explosion_two.png", g_screen, NUM_FRAME_EXP);
-	if (!tRet)
-		return -1;
-	ExplosionObject exp_main;
-	bool mRet = exp_main.LoadImg("img//PLAYER//DEAD_RIGHT.png", g_screen, MAIN_FRAME_EXP);
-	exp_main.set_clip(MAIN_FRAME_EXP);
-	if (!mRet)
-		return -1;
-	// Score text
-	TextObject score_game;
-	score_game.SetColor(TextObject::WHITE_TEXT);
-
-	TextObject money_game;
-	money_game.SetColor(TextObject::WHITE_TEXT);
-	// BEST_SCORE
-
-	// menu game
 	bool is_quit = false;
 	bool Play_Again = false;
-
 	LoadMenuStart(g_menu_screen,g_screen,gMenuMusic,gMove,gClick,Play_Again);
-	
+
 	while (Play_Again)
 	{
 		Mix_PlayMusic(gMusic, IS_REPEATITIVE);
-		bool SPEEDING = false;
 		bool checking = false;
-		bool is_die = false;
 		int time_ = 0;
 		int acceleration = 0;
 		int score = 0;
-		int accel_speed = 50;
 		int time_count = 200;
-		int undie_time = 200;
+		p_player.undie_time = 200;
 		int money = 0;
 		int num_die = 0;
 		is_quit = false;
-
+		
 		player_power.Init(g_screen);
 		Item *item = MakeRandomItem(1,g_screen);
 		std::vector<ThreatsObject *> threats_list = MakeThreatList(g_screen);
 		std::vector<Item *> coins_list = MakeCoinList(rand() % 9, g_screen);
-		std::ifstream file("BEST_SCORE.txt");
-		int bscore;
-		file >> bscore;
-		TextObject best_score;
-		best_score.SetColor(TextObject::WHITE_TEXT);
-		std::string b_score = std::to_string(bscore);
-		std::string strb_score("BEST: ");
-		strb_score += b_score;
 		std::vector<ExplosionObject *> explosion_list;
+
+		int bscore = getBestScoreFromFile();
 
 		while (!is_quit)
 		{
@@ -252,7 +234,7 @@ int main(int argc, char *args[])
 				RecreateItem(item, 1, g_screen);
 				checking = true;
 			}
-			fps_timer.start();
+			start_tick_ = SDL_GetTicks();
 
 			while (SDL_PollEvent(&g_event) != 0)
 			{
@@ -269,32 +251,27 @@ int main(int argc, char *args[])
 					p_player.is_pause = false;
 				}
 			}
+
 			SDL_SetRenderDrawColor(g_screen, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR, RENDER_DRAW_COLOR);
 			SDL_RenderClear(g_screen);
-
 			LoadBackground();
 
 			p_player.HandleBullet(g_screen, acceleration);
-			if (SPEEDING == false)
-				p_player.DoPlayerX(acceleration);
-
+			p_player.DoPlayerX(acceleration);
 			p_player.Show(g_screen, MAIN_FRAME);
-			if (undie_time > 0)
-			{
-				undie_time--;
-			}
-			if (SPEEDING == true && time_count > 0)
+
+			if (p_player.SPEEDING == true && time_count > 0)
 			{
 				time_count--;
-				acceleration = accel_speed;
+				acceleration = ACCEL_SPEED;
 			}
 			else if (time_count == 0)
 			{
-				SPEEDING = false;
+				p_player.SPEEDING = false;
 				time_count = 200;
 				acceleration = 0;
 				checking = false;
-				undie_time = 200;
+				p_player.undie_time = 200;
 			}
 			if (item != NULL && checking == true)
 			{
@@ -304,8 +281,8 @@ int main(int argc, char *args[])
 				SDL_Rect rect_item = item->GetRectFrame();
 				if (CheckCollision(rect_item, rect_player))
 				{
-					undie_time = 200;
-					SPEEDING = true;
+					p_player.undie_time = 200;
+					p_player.SPEEDING = true;
 					item->Free();
 					item = NULL;
 				}
@@ -340,7 +317,7 @@ int main(int argc, char *args[])
 				if (p_threat != NULL)
 				{
 					p_threat->Move(acceleration);
-					p_threat->Show(g_screen);
+					p_threat->Show(g_screen,THREAT_FRAME_NUM);
 					p_threat->MakeBullet(g_screen, SCREEN_WIDTH, SCREEN_HEIGHT, acceleration);
 					SDL_Rect rect_player = p_player.GetRectFrame();
 					bool bCol1 = false;
@@ -361,27 +338,28 @@ int main(int argc, char *args[])
 					}
 					SDL_Rect rect_threat = p_threat->GetRectFrame();
 					bool bCol2 = CheckCollision(rect_threat, rect_player);
-					if (undie_time == 0)
+					if (p_player.undie_time == 0)
 					{
-						if ((bCol1 || bCol2) && (SPEEDING == false))
+						if ((bCol1 || bCol2) && (p_player.SPEEDING == false))
 						{
 							ExplosionObject *newExplosion = new ExplosionObject();
-							newExplosion->LoadImg("img//PLAYER//DEAD_RIGHT.png", g_screen, MAIN_FRAME_EXP);
+							if (p_player.OnGround()) newExplosion->LoadImg("img//PLAYER//STAND_DIE.png", g_screen, MAIN_FRAME_EXP);
+							else newExplosion->LoadImg("img//PLAYER//FLY_DIE.png",g_screen,MAIN_FRAME_EXP);
 							newExplosion->set_clip(MAIN_FRAME_EXP);
-							int px_pos = (p_player.GetRect().x + p_player.get_frame_width() * 0.5) - exp_main.get_frame_width() * 0.5;
-							int py_pos = (p_player.GetRect().y + p_player.get_frame_height() * 0.5) - exp_main.get_frame_height() * 0.5;
+							int px_pos = (p_player.GetRect().x + p_player.get_frame_width() * 0.5) - newExplosion->get_frame_width() * 0.5;
+							int py_pos = (p_player.GetRect().y + p_player.get_frame_height() * 0.5) - newExplosion->get_frame_height() * 0.5;
 							newExplosion->SetRect(px_pos, py_pos);
 							explosion_list.push_back(newExplosion);
 							num_die++;
 							if (num_die < 3)
 							{
-								is_die = true;
-								undie_time = 200;
+								p_player.undie_time = 200;
 								p_player.set_comback_time(60);
 								// SDL_Delay(1000);
 								Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
 								player_power.Decrease();
 								player_power.Render(g_screen);
+								SDL_Delay(100);
 								continue;
 							}
 							else
@@ -396,7 +374,7 @@ int main(int argc, char *args[])
 				if (quit == true)
 					break;
 			}
-
+			// player bullet
 			std::vector<BulletObject *> bullet_arr = p_player.get_bullet_list();
 			for (int r = 0; r < bullet_arr.size(); r++)
 			{
@@ -418,8 +396,8 @@ int main(int argc, char *args[])
 								ExplosionObject *newExplosion = new ExplosionObject();
 								newExplosion->LoadImg("img//explosion//Explosion_two.png", g_screen, NUM_FRAME_EXP);
 								newExplosion->set_clip(NUM_FRAME_EXP);
-								int tx_pos = obj_threat->GetRect().x - exp_threat.get_frame_width() * 0.4;
-								int ty_pos = obj_threat->GetRect().y - exp_threat.get_frame_height() * 0.4;
+								int tx_pos = obj_threat->GetRect().x - newExplosion->get_frame_width() * 0.4;
+								int ty_pos = obj_threat->GetRect().y - newExplosion->get_frame_height() * 0.4;
 								newExplosion->SetRect(tx_pos, ty_pos);
 								explosion_list.push_back(newExplosion);
 								p_player.RemoveBullet(r);
@@ -446,32 +424,12 @@ int main(int argc, char *args[])
 				}
 			}
 			// Show score and money
-			std::string score_str = std::to_string(score);
-			std::string strScore("SCORE: ");
-			strScore += score_str;
-			score_game.SetText(strScore);
-			score_game.LoadFromRenderText(font_, g_screen);
-			score_game.RenderText(g_screen,0, 80);
-
-			if (score > bscore)
-			{
-				bscore = score;
-				b_score = std::to_string(bscore);
-				strb_score = "BEST: ";
-				strb_score += b_score;
-			}
-			best_score.SetText(strb_score);
-			best_score.LoadFromRenderText(font_, g_screen);
-			best_score.RenderText(g_screen, 0 , 120);
-			std::string money_str = std::to_string(money);
-
-			money_game.SetText(money_str);
-			money_game.LoadFromRenderText(font_, g_screen);
-			money_game.RenderText(g_screen,40, 50);
-
+			ShowScore(score,score_game,font_,g_screen);
+			ShowBestScore(bscore,score,best_score,font_,g_screen);
+			ShowMoney(money,money_game,font_,g_screen);
 			SDL_RenderPresent(g_screen);
 
-			int real_imp_time = fps_timer.get_ticks();
+			int real_imp_time = SDL_GetTicks() - start_tick_;
 			int time_one_frame = 1000 / FRAME_PER_SECOND; // ms
 
 			if (real_imp_time < time_one_frame)
@@ -505,10 +463,7 @@ int main(int argc, char *args[])
 			}
 			coins_list.clear();
 		}
-		file.close();
-		std::ofstream outfile("BEST_SCORE.txt");
-		outfile << bscore;
-		outfile.close();
+		SaveBestScoreToFile(bscore);
 	}
 	close();
 	return 0;

@@ -25,12 +25,6 @@ bool BulletObject::LoadImgBullet(SDL_Renderer* des)
     case LASER_BULLET:
         ret = LoadImg("img//bullet//laser_bullet.png", des);
         break;
-    case FIRE_BULLET:
-        ret = LoadImg("img//bullet//fire_bullet.png", des);
-        break;
-    case R_BULLET:
-        ret = LoadImg("img//bullet//R_bullet.png", des);
-        break;
     case LASER_BULLET_02:
         ret = LoadImg("img//bullet//laser_bullet_02.png", des);
         break;
@@ -45,6 +39,7 @@ bool BulletObject::LoadImgBullet(SDL_Renderer* des)
 }
 void BulletObject::HandleMove(const int &x_border, const int &y_border, int acceleration)
 {
+    distance_ += (x_val_+acceleration);
     switch (bullet_dir_)
     {
     case DIR_RIGHT:
@@ -58,9 +53,14 @@ void BulletObject::HandleMove(const int &x_border, const int &y_border, int acce
     case DIR_LEFT:
         {
             rect_.x -=( x_val_ + acceleration);
-            if (rect_.x < 0 || rect_.x > x_border) 
+            // if (rect_.x < 0 || rect_.x > x_border) 
+            // {
+            //     is_move_ = false;
+            // }
+            if (distance_ > 1200 || rect_.x > x_border) 
             {
                 is_move_ = false;
+                distance_ = 0;
             }
         } break;
     case DIR_DOWN:

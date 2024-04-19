@@ -4,7 +4,7 @@ std::vector<ThreatsObject *> MakeThreatList(SDL_Renderer *screen)
 {
 	std::vector<ThreatsObject *> list_threats;
 
-	ThreatsObject *dymaic_threats = new ThreatsObject[5];
+	ThreatsObject *dymaic_threats = new ThreatsObject[6];
 	ThreatsObject *p_threat = (dymaic_threats);
 	for (int i = 0; i < 2; i++)
 	{
@@ -12,7 +12,7 @@ std::vector<ThreatsObject *> MakeThreatList(SDL_Renderer *screen)
 		if (p_threat != NULL)
 		{
 			p_threat->LoadImg("img//threat//threat2_left.png", screen);
-			p_threat->set_clips();
+			p_threat->set_clips(THREAT_FRAME_NUM);
 			p_threat->set_type_threat(ThreatsObject::THREAT_2);
 			p_threat->set_x_pos(rand() % (SCREEN_WIDTH + THREAT_POSITION_RANGE) + SCREEN_WIDTH);
 			p_threat->set_y_pos(rand() % (SCREEN_HEIGHT - 120 - 120) + 120);
@@ -22,18 +22,31 @@ std::vector<ThreatsObject *> MakeThreatList(SDL_Renderer *screen)
 		}
 	}
 	// plane
-	for (int i = 2; i < 4; i++)
+	for (int i = 2; i < 3; i++)
 	{
 		p_threat = (dymaic_threats + i);
 		if (p_threat != NULL)
 		{
 			p_threat->LoadImg("img//threat//plane_left.png", screen);
-			p_threat->set_clips();
+			p_threat->set_clips(THREAT_FRAME_NUM);
 			p_threat->set_type_threat(ThreatsObject::THREAT_PLANE);
 			p_threat->set_x_pos(rand() % (SCREEN_WIDTH + THREAT_POSITION_RANGE) + SCREEN_WIDTH);
 			p_threat->set_y_pos(rand() % (SCREEN_HEIGHT - 120 - 120) + 120);
 			BulletObject *p_bullet = new BulletObject();
 			p_threat->InitBullet(p_bullet, screen);
+			list_threats.push_back(p_threat);
+		}
+	}
+	// saw
+	for (int i=3;i<5;i++)
+	{
+		p_threat = (dymaic_threats + i);
+		if (p_threat != NULL)
+		{
+			p_threat->LoadImg("img//threat//suriken_2_left.png", screen);
+			p_threat->set_clips(THREAT_FRAME_NUM);
+			p_threat->set_x_pos(rand() % (SCREEN_WIDTH + THREAT_POSITION_RANGE) + SCREEN_WIDTH);
+			p_threat->set_y_pos(GROUND+78);
 			list_threats.push_back(p_threat);
 		}
 	}
@@ -100,7 +113,6 @@ void RecreateItem(Item *&item, int x, SDL_Renderer *screen)
 
 void RecreateCoinList(std::vector<Item *> &coins_list, int x, SDL_Renderer *screen)
 {
-	// Kiểm tra xem danh sách có đồng xu nào đi ra khỏi màn hình không
 	for (int i = 0; i < coins_list.size();)
 	{
 		Item *coin = coins_list.at(i);
@@ -329,7 +341,7 @@ void LoadMenuPause(BaseObject g_menu_screen,
 					{
 						menu_p_quit = true;
 						Mix_PlayChannel(MIX_CHANNEL, gClick, 0);
-						Mix_PlayMusic(gMusic, IS_REPEATITIVE);
+						Mix_ResumeMusic();
 						// g_menu_screen.Free();
 					}
 					if (CheckMousePos(MousePosX, MousePosY, ExitButton[0].GetRect()) == true)
@@ -433,4 +445,47 @@ void LoadMenuQuit(BaseObject g_menu_screen,
 		}
 		SDL_RenderPresent(screen);
 	}
+}
+
+int getBestScoreFromFile() 
+{
+	std::ifstream file("BEST_SCORE.txt");
+	int bscore;
+	file >> bscore;
+	file.close();
+	return bscore;
+}
+
+void SaveBestScoreToFile(int &bscore) 
+{
+	std::ofstream outfile("BEST_SCORE.txt");
+	outfile << bscore;
+	outfile.close();
+}
+void ShowScore(int &score, TextObject &score_game, TTF_Font *&font_, SDL_Renderer* screen)
+{
+	std::string strScore ="SCORE: " + std::to_string(score);
+	score_game.SetText(strScore);
+	score_game.LoadFromRenderText(font_, screen);
+	score_game.RenderText(screen,0, 80);
+}
+
+void ShowBestScore(int &bscore,int &score ,TextObject &bscore_game, TTF_Font *&font_, SDL_Renderer*screen) 
+{
+	if (score > bscore)
+	{
+		bscore = score;
+	}
+	std::string str_bScore = "BEST: " + std::to_string(bscore);
+	bscore_game.SetText(str_bScore);
+	bscore_game.LoadFromRenderText(font_, screen);
+	bscore_game.RenderText(screen, 0 , 120);
+}
+
+void ShowMoney(int &money, TextObject &money_game, TTF_Font *&font_, SDL_Renderer* screen) 
+{
+	std::string money_str = std::to_string(money);
+	money_game.SetText(money_str);
+	money_game.LoadFromRenderText(font_, screen);
+	money_game.RenderText(screen,40, 50);
 }

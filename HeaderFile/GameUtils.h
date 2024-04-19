@@ -6,7 +6,7 @@
 #include "ThreatsObject.h"
 #include "Item.h"
 #include "BulletObject.h"
-
+#include "TextObject.h"
 std::vector<ThreatsObject *> MakeThreatList(SDL_Renderer *screen);
 
 std::vector<Item *> MakeCoinList(int x, SDL_Renderer *screen);
@@ -44,5 +44,16 @@ void LoadMenuQuit(BaseObject g_menu_screen,
                     bool &is_quit,
                     bool &quit,
                     bool &Play_Again);
+
+int getBestScoreFromFile();
+
+void SaveBestScoreToFile(int &bscore);
+
+void ShowScore(int &score, TextObject &score_game, TTF_Font *&font_, SDL_Renderer* screen);
+
+void ShowBestScore(int &bscore,int &score ,TextObject &bscore_game, TTF_Font *&font_, SDL_Renderer*screen);
+
+void ShowMoney(int &money, TextObject &money_game, TTF_Font *&font_, SDL_Renderer* screen);
+
 
 #endif // !GAME_UTILS_H_

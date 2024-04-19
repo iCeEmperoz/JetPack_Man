@@ -11,6 +11,7 @@
 #define THREAT_POSITION_RANGE 250
 #define THREAT_MAX_FALL_SPEED 10
 #define THREAT_GRAVITY_SPEED 0.2
+
 #define THREAT_FRAME_NUM 8
 #define THREAT_SPEED 5
 
@@ -32,15 +33,14 @@ public:
     float get_x_pos() const { return x_pos_; }
     float get_y_pos() const { return y_pos_; }
     
-    void set_clips();
+    void set_clips(int frame);  
     bool LoadImg(std::string path, SDL_Renderer *screen);
-    void Show(SDL_Renderer *des);
+    void Show(SDL_Renderer *des,int frame);
     int get_width_frame() const { return width_frame_; }
     int get_height_frame() const { return height_frame_; }
     void Move(const int& acceleration);
 
     void set_type_threat(const int& typeThreat) {type_threat_ = typeThreat;}
-    void set_input_left(const int &ipLeft) { input_type_.left_ = ipLeft; }
     SDL_Rect GetRectFrame();
 
     std::vector<BulletObject*> get_bullet_list() const {return bullet_list_;}
@@ -60,7 +60,6 @@ private:
     int height_frame_;
     int frame_;
 
-    Input input_type_;
     int type_threat_;
     std::vector<BulletObject*>  bullet_list_;
 };

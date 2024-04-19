@@ -34,11 +34,11 @@ SDL_Rect ThreatsObject::GetRectFrame()
 
     return rect;
 }
-void ThreatsObject::set_clips()
+void ThreatsObject::set_clips(int frame)
 {
     if (width_frame_ > 0 && height_frame_ > 0)
     {
-        for (int i = 0; i < THREAT_FRAME_NUM; i++)
+        for (int i = 0; i < frame; i++)
         {
             frame_clip_[i].x = i * width_frame_;
             frame_clip_[i].y = 0;
@@ -48,12 +48,12 @@ void ThreatsObject::set_clips()
     }
 }
 
-void ThreatsObject::Show(SDL_Renderer *des)
+void ThreatsObject::Show(SDL_Renderer *des, int frame)
 {
     rect_.x = x_pos_;
     rect_.y = y_pos_;
     frame_++;
-    if (frame_ >= THREAT_FRAME_NUM)
+    if (frame_ >= frame)
     {
         frame_ = 0;
     }

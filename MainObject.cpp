@@ -10,10 +10,9 @@ MainObject::MainObject()
     height_frame_ = 0;
     status_ = WALK_RIGHT;
 
-    on_ground_ = false;
-
     come_back_time_ = 0;
     is_pause = false;
+    SPEEDING = false;
 }
 
 MainObject::~MainObject()
@@ -60,7 +59,7 @@ void MainObject::set_clip()
 
 void MainObject::HandelInputAction(SDL_Event events, SDL_Renderer *screen, Mix_Chunk *mChunk)
 {
-    if (come_back_time_ == 0) 
+    if (come_back_time_ == 0)
     {
         if (events.type == SDL_KEYDOWN)
         {
@@ -172,26 +171,32 @@ void MainObject::RemoveBullet(const int &idx)
 
 void MainObject::DoPlayerX(int acceleration)
 {
-    if (come_back_time_ == 0)
-    {
-        if (status_ == FLY)
+    if (!SPEEDING) {
+        if (come_back_time_ == 0)
         {
-            y_pos_ -= (PLAYER_JUMP_VAL+acceleration);
-        }
-        if (y_pos_ <= 0)
-        {
-            y_pos_ = 0;
-            status_ == FALL;
-        }
-        if (status_ == FALL && y_pos_ < GROUND)
-        {
-            y_pos_ += GRAVITY_SPEED+acceleration;
-        }
-        if (y_pos_ > GROUND) 
-        {
-            y_pos_ = GROUND;
+            if (status_ == FLY)
+            {
+                y_pos_ -= (PLAYER_JUMP_VAL + acceleration);
+            }
+            if (y_pos_ <= 0)
+            {
+                y_pos_ = 0;
+                status_ == FALL;
+            }
+            if (status_ == FALL && y_pos_ < GROUND)
+            {
+                y_pos_ += GRAVITY_SPEED + acceleration;
+            }
+            if (y_pos_ > GROUND)
+            {
+                y_pos_ = GROUND;
+            }
         }
     }
+    if (undie_time > 0)
+	{
+		undie_time--;
+	}
     if (come_back_time_ > 0)
     {
         come_back_time_--;
@@ -219,17 +224,32 @@ void MainObject::ShootNormal(SDL_Renderer *screen)
     p_bullet_list_.push_back(p_bullet);
 }
 
-
 void MainObject::UpdateImagePlayer(SDL_Renderer *des)
 {
     if (OnGround() == false)
     {
-        LoadImg("img//PLAYER//FLY_WITH_GUN.png", des);
-        set_clip();
+        if (undie_time != 0)
+        {
+            LoadImg("img//PLAYER//FLY_WITH_GUN_N.png", des);
+            set_clip();
+        }
+        else
+        {
+            LoadImg("img//PLAYER//FLY_WITH_GUN.png", des);
+            set_clip();
+        }
     }
     else
     {
-        LoadImg("img//PLAYER//WALK_WITH_GUN.png", des);
-        set_clip();
+        if (undie_time != 0)
+        {
+            LoadImg("img//PLAYER//WALK_WITH_GUN_N.png", des);
+            set_clip();
+        }
+        else
+        {
+            LoadImg("img//PLAYER//WALK_WITH_GUN.png", des);
+            set_clip();
+        }
     }
 }

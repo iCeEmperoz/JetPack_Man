@@ -3,8 +3,7 @@
 
 #include "CommonFunc.h"
 
-#define GRAVITY_SPEED 3
-#define MAX_FALL_SPEED 6
+
 class BaseObject 
 {
     public:

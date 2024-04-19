@@ -94,6 +94,7 @@ Item *MakeRandomItem(int x, SDL_Renderer *screen)
 	item->set_x_pos(xpos);
 	item->set_y_pos(ypos);
 	item->set_y_start(ypos);
+	item->set_amplitude(((rand() % 2 == 0) ? 1 : -1)*1.0f * AMPLITUDE);
 	return item;
 }
 

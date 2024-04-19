@@ -205,7 +205,7 @@ int main(int argc, char *args[])
 	while (Play_Again)
 	{
 		Mix_PlayMusic(gMusic, IS_REPEATITIVE);
-		int time_ = 0;
+		int time_ = 0;    
 		int acceleration = 0;
 		int score = 0;
 		int time_item = 200;
@@ -226,7 +226,7 @@ int main(int argc, char *args[])
 			UpdateGameTimeAndScore(time_, acceleration, score);
 			RecreateCoinList(coins_list, rand() % (9),g_screen);
 			RecreateThreatList(threats_list,g_screen);
-			if (score % 400 == 0)
+			if (score % 300 == 0)
 			{
 				RecreateItem(item, 1, g_screen);
 			}
@@ -262,8 +262,8 @@ int main(int argc, char *args[])
 				item->Show(g_screen, ITEM_FRAME_NUM);
 				SDL_Rect rect_player = p_player.GetRectFrame();
 				SDL_Rect rect_item = item->GetRectFrame();
-				if (CheckCollision(rect_item, rect_player))
-				{
+				if (CheckCollision(rect_item, rect_player) && p_player.get_comback_time() == 0)
+				{ 
 					p_player.undie_time = 200;
 					p_player.SPEEDING = true;
 					item->Free();
@@ -340,7 +340,6 @@ int main(int argc, char *args[])
 								Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
 								player_power.Decrease();
 								player_power.Render(g_screen);
-								SDL_Delay(100);
 								continue;
 							}
 							else

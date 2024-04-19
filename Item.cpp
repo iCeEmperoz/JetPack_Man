@@ -42,8 +42,9 @@ void Item::Move(int acceleration)
 
 void Item::Move_sin(int acceleration)
 {
-    x_pos_ -= (ITEM_SPEED+acceleration);
-    y_pos_ = y_start_- (rand() % (1) - 1)*1.0f * AMPLITUDE * sin(FREQUENCY * x_pos_);
+    x_pos_ -= (ITEM_SPEED + acceleration);
+
+    y_pos_ = y_start_ + amplitude * sin(FREQUENCY * x_pos_);
 }
 bool Item::IsOffScreenLeft() {
     return x_pos_ < 0;

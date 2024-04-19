@@ -17,7 +17,7 @@ void PlayerPower::AddPos(const int& xp)
 
 void PlayerPower::Init(SDL_Renderer* screen)
 {
-    LoadImg("img//hearsteel.png", screen);
+    LoadImg("img//item//hearsteel.png", screen);
     number_ = 3;
     if (pos_list_.size() > 0)
     {
@@ -61,7 +61,7 @@ PlayerMoney::~PlayerMoney()
 }
 void PlayerMoney::Init(SDL_Renderer* screen)
 {
-   bool ret = LoadImg("img//money.png", screen);
+   bool ret = LoadImg("img//Item//money.png", screen);
 }
 
 void PlayerMoney::Show(SDL_Renderer* screen)

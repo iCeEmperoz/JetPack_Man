@@ -6,7 +6,8 @@
 #include "cmath"
 #define ITEM_FRAME_NUM 5
 #define ITEM_SPEED 5
-const float AMPLITUDE = 250.0f; // Biên độ của đường cong sin
+
+const float AMPLITUDE = 250.0f; // Biên độ 
 const float FREQUENCY = 0.01f; // Tần số của đường cong sin
 
 class Item : public BaseObject
@@ -31,9 +32,13 @@ public:
     void Show(SDL_Renderer *des, int FRAME);
     void Move(int acceleration);
     void Move_sin(int acceleration);
+
+    void set_amplitude(const float &amp) {amplitude = amp;} 
     bool IsOffScreenLeft();
     bool IsOffScreenRight();
+
 private:
+    float amplitude; // Biên độ của đường cong sin
     float x_pos_;
     float y_pos_;
     float y_start_;

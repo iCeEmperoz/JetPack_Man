@@ -1,7 +1,7 @@
 #ifndef TEXT_OBJECT_H_
 #define TEXT_OBJECT_H_
 
-#include "CommonFunc.h"
+#include "Variable.h"
 
 class TextObject
 {

@@ -1,7 +1,7 @@
 #ifndef MAIN_OBJECT_H_
 #define MAIN_OBJECT_H_
 
-#include "CommonFunc.h"
+#include "Variable.h"
 #include "BaseObject.h"
 #include "BulletObject.h"
 #include <vector>
@@ -25,7 +25,7 @@ public:
     void Show(SDL_Renderer *des, int num_frame);
     void HandelInputAction(SDL_Event envents, SDL_Renderer *screen, Mix_Chunk* mChunk);
     void set_clip();
-    void DoPlayerX(int acceleration);
+    void DoPlayerX(int &acceleration);
     void set_x_pos(const float &xp) { x_pos_ = xp; }
     void set_y_pos(const float &yp) { y_pos_ = yp; }
     float get_x_pos() const {return x_pos_;}
@@ -50,6 +50,7 @@ public:
     };
     bool is_pause;
     int undie_time;
+    int time_item;
     bool SPEEDING;
 private:
     std::vector<BulletObject *> p_bullet_list_;

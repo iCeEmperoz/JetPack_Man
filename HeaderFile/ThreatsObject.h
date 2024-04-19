@@ -1,7 +1,7 @@
 #ifndef THREATS_OBJECT_H_
 #define THREATS_OBJECT_H_
 
-#include "CommonFunc.h"
+#include "Variable.h"
 #include "BaseObject.h"
 #include "BulletObject.h"
 

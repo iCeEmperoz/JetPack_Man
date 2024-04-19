@@ -1,7 +1,7 @@
 #ifndef ITEM_H_
 #define ITEM_H_
 
-#include "CommonFunc.h"
+#include "Variable.h"
 #include "BaseObject.h"
 #include "cmath"
 #define ITEM_FRAME_NUM 5
@@ -37,8 +37,6 @@ private:
     float x_pos_;
     float y_pos_;
     float y_start_;
-    bool on_ground_;
-    int come_back_time_;
     SDL_Rect frame_clip_[ITEM_FRAME_NUM];
     int width_frame_;
     int height_frame_;

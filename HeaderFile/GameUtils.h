@@ -1,7 +1,7 @@
 #ifndef GAME_UTILS_H_
 #define GAME_UITLS_H_
 
-#include "CommonFunc.h"
+#include "Variable.h"
 #include "BaseObject.h"
 #include "ThreatsObject.h"
 #include "Item.h"
@@ -55,5 +55,10 @@ void ShowBestScore(int &bscore,int &score ,TextObject &bscore_game, TTF_Font *&f
 
 void ShowMoney(int &money, TextObject &money_game, TTF_Font *&font_, SDL_Renderer* screen);
 
+bool CheckCollision(const SDL_Rect& object1, const SDL_Rect& object2);
+
+bool CheckMousePos(const int& x,const int& y,const SDL_Rect& Object);
+
+int UpdateGameTimeAndScore(int &time, int &speed, int &score);
 
 #endif // !GAME_UTILS_H_

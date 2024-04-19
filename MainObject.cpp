@@ -11,6 +11,7 @@ MainObject::MainObject()
     status_ = WALK_RIGHT;
 
     come_back_time_ = 0;
+    undie_time = 200;
     is_pause = false;
     SPEEDING = false;
 }
@@ -99,6 +100,7 @@ void MainObject::HandelInputAction(SDL_Event events, SDL_Renderer *screen, Mix_C
         }
     }
 }
+
 void MainObject::Show(SDL_Renderer *des, int num_frame)
 {
     UpdateImagePlayer(des);
@@ -169,9 +171,10 @@ void MainObject::RemoveBullet(const int &idx)
     }
 }
 
-void MainObject::DoPlayerX(int acceleration)
+void MainObject::DoPlayerX(int &acceleration)
 {
-    if (!SPEEDING) {
+    if (!SPEEDING)
+    {
         if (come_back_time_ == 0)
         {
             if (status_ == FLY)
@@ -193,10 +196,22 @@ void MainObject::DoPlayerX(int acceleration)
             }
         }
     }
+    if (SPEEDING == true && time_item > 0)
+    {
+        time_item--;
+        acceleration = ACCEL_SPEED;
+    }
+    else if (time_item == 0)
+    {
+        SPEEDING = false;
+        time_item = 200;
+        acceleration = 0;
+        undie_time = 200;
+    }
     if (undie_time > 0)
-	{
-		undie_time--;
-	}
+    {
+        undie_time--;
+    }
     if (come_back_time_ > 0)
     {
         come_back_time_--;

@@ -2,7 +2,7 @@
 #ifndef EXPLOSION_OBJECT_H_
 #define EXPLOSION_OBJECT_H_
 
-#include "CommonFunc.h"
+#include "Variable.h"
 #include "BaseObject.h"
 
 #define  NUM_FRAME_EXP 20

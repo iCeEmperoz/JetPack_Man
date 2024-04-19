@@ -1,7 +1,6 @@
-#include "HeaderFile/CommonFunc.h"
+#include "HeaderFile/Variable.h"
 #include "HeaderFile/BaseObject.h"
 #include "HeaderFile/MainObject.h"
-#include "HeaderFile/ImpTimer.h"
 #include "HeaderFile/ThreatsObject.h"
 #include "HeaderFile/ExplosionObject.h"
 #include "HeaderFile/TextObject.h"
@@ -11,7 +10,7 @@
 
 BaseObject g_background;
 BaseObject g_backgroundTexture[BACKGROUND_LAYER];
-BaseObject g_menu_screen;
+BaseObject g_menu_screen;	
 
 int OffsetSpeed_Ground = BASE_OFFSET_SPEED;
 std::vector<double> OffsetSpeed_Bkgr(BACKGROUND_LAYER, BASE_OFFSET_SPEED);
@@ -206,18 +205,16 @@ int main(int argc, char *args[])
 	while (Play_Again)
 	{
 		Mix_PlayMusic(gMusic, IS_REPEATITIVE);
-		bool checking = false;
 		int time_ = 0;
 		int acceleration = 0;
 		int score = 0;
-		int time_count = 200;
-		p_player.undie_time = 200;
+		int time_item = 200;
 		int money = 0;
 		int num_die = 0;
 		is_quit = false;
 		
 		player_power.Init(g_screen);
-		Item *item = MakeRandomItem(1,g_screen);
+		Item *item = NULL;
 		std::vector<ThreatsObject *> threats_list = MakeThreatList(g_screen);
 		std::vector<Item *> coins_list = MakeCoinList(rand() % 9, g_screen);
 		std::vector<ExplosionObject *> explosion_list;
@@ -232,7 +229,6 @@ int main(int argc, char *args[])
 			if (score % 400 == 0)
 			{
 				RecreateItem(item, 1, g_screen);
-				checking = true;
 			}
 			start_tick_ = SDL_GetTicks();
 
@@ -260,20 +256,7 @@ int main(int argc, char *args[])
 			p_player.DoPlayerX(acceleration);
 			p_player.Show(g_screen, MAIN_FRAME);
 
-			if (p_player.SPEEDING == true && time_count > 0)
-			{
-				time_count--;
-				acceleration = ACCEL_SPEED;
-			}
-			else if (time_count == 0)
-			{
-				p_player.SPEEDING = false;
-				time_count = 200;
-				acceleration = 0;
-				checking = false;
-				p_player.undie_time = 200;
-			}
-			if (item != NULL && checking == true)
+			if (item != NULL)
 			{
 				item->Move_sin(acceleration);
 				item->Show(g_screen, ITEM_FRAME_NUM);
@@ -331,7 +314,6 @@ int main(int argc, char *args[])
 							bCol1 = CheckCollision(rect_bullet, rect_player) && pt_bullet->get_is_move();
 							if (bCol1)
 							{
-								// pt_bullet->set_is_move(false);
 								break;
 							}
 						}
@@ -355,7 +337,6 @@ int main(int argc, char *args[])
 							{
 								p_player.undie_time = 200;
 								p_player.set_comback_time(60);
-								// SDL_Delay(1000);
 								Mix_PlayChannel(MIX_CHANNEL, gLose, NOT_REPEATITIVE);
 								player_power.Decrease();
 								player_power.Render(g_screen);

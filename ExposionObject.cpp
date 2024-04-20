@@ -44,8 +44,6 @@ void ExplosionObject::set_clip(const int num_frame)
 void ExplosionObject::Show(SDL_Renderer* screen, const int num_frame)
 {
     SDL_Rect* current_clip = &frame_clip_[frame_];
-    // rect_.x = x_pos_ - map_x_;
-    // rect_.y = y_pos_ - map_y_;
     if(frame_ >= num_frame)
     {
         frame_ = 0;
@@ -54,14 +52,5 @@ void ExplosionObject::Show(SDL_Renderer* screen, const int num_frame)
     SDL_Rect RenderQuard = {rect_.x,rect_.y,frame_width_,frame_height_};
     SDL_RenderCopy(screen, p_object_, current_clip, &RenderQuard);
     frame_++;
-    // SDL_Rect* current_clip = &frame_clip_[frame_];
-    // SDL_Rect render_quad = { rect_.x, rect_.y, frame_width_, frame_height_ };
-    // if (current_clip != NULL)
-    // {
-    //     render_quad.w = current_clip->w;
-    //     render_quad.h = current_clip->h;
-    // }
-
-    // SDL_RenderCopy(screen, p_object_, current_clip, &render_quad);
 }
 
